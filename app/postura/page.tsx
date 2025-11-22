@@ -17,7 +17,7 @@ import {
   deleteRegistroPostura,
   getJaulas,
 } from "@/lib/db-actions";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { NavHeader } from "@/components/nav-header";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -43,7 +43,7 @@ type Stats = {
   porcentaje_rotos: number;
 };
 
-export default function PosturaPage() {
+function PosturaContent() {
   const [registros, setRegistros] = useState<RegistroPostura[]>([]);
   const [jaulas, setJaulas] = useState<Jaula[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -292,5 +292,13 @@ export default function PosturaPage() {
         jaulas={jaulas}
       />
     </div>
+  );
+}
+
+export default function PosturaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Cargando...</div>}>
+      <PosturaContent />
+    </Suspense>
   );
 }

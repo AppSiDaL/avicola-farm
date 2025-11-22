@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getVentas, getVentasStats, deleteVenta } from "@/lib/db-actions";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { NavHeader } from "@/components/nav-header";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -24,7 +24,7 @@ type Stats = {
   clientes_unicos: number;
 };
 
-export default function VentasPage() {
+function VentasContent() {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -206,5 +206,13 @@ export default function VentasPage() {
         venta={selectedVenta}
       />
     </div>
+  );
+}
+
+export default function VentasPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Cargando...</div>}>
+      <VentasContent />
+    </Suspense>
   );
 }

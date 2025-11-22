@@ -6,7 +6,7 @@ import { NavHeader } from "@/components/nav-header";
 import { Button } from "@/components/ui/button";
 import { getJaulas } from "@/lib/db-actions";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 type Jaula = {
@@ -20,7 +20,7 @@ type Jaula = {
   total_aves: number;
 };
 
-export default function JaulasPage() {
+function JaulasContent() {
   const [jaulas, setJaulas] = useState<Jaula[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJaula, setSelectedJaula] = useState<Jaula | null>(null);
@@ -165,5 +165,13 @@ export default function JaulasPage() {
         jaula={selectedJaula}
       />
     </div>
+  );
+}
+
+export default function JaulasPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <JaulasContent />
+    </Suspense>
   );
 }
