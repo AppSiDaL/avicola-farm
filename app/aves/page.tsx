@@ -308,7 +308,7 @@ export default function AvesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleOpenModal(ave)}
-                        className="w-full border-orange-600 text-orange-600 hover:bg-orange-50"
+                        className="flex-1 border-orange-600 text-orange-600 hover:bg-orange-50"
                       >
                         Editar
                       </Button>
@@ -316,7 +316,7 @@ export default function AvesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDelete(ave.id)}
-                        className="w-full border-red-600 text-red-600 hover:bg-red-50"
+                        className="flex-1 border-red-600 text-red-600 hover:bg-red-50"
                       >
                         Eliminar
                       </Button>
