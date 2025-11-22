@@ -109,77 +109,81 @@ export function AveFormModal({
             {ave ? "Editar Ave" : "Nueva Ave"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="fecha_ingreso">Fecha de Ingreso *</Label>
-            <Input
-              id="fecha_ingreso"
-              name="fecha_ingreso"
-              type="date"
-              value={formData.fecha_ingreso}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="raza">Raza *</Label>
-            <Select
-              name="raza"
-              value={formData.raza}
-              onValueChange={(value) => handleSelectChange("raza", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar raza" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Rhode Island Red">Rhode Island Red</SelectItem>
-                <SelectItem value="Leghorn Blanca">Leghorn Blanca</SelectItem>
-                <SelectItem value="Plymouth Rock">Plymouth Rock</SelectItem>
-                <SelectItem value="Sussex">Sussex</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="jaula_id">Jaula</Label>
-            <Select
-              name="jaula_id"
-              value={String(formData.jaula_id)}
-              onValueChange={(value) => handleSelectChange("jaula_id", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar jaula" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Sin asignar</SelectItem>
-                {jaulas.map((jaula) => (
-                  <SelectItem key={jaula.id} value={String(jaula.id)}>
-                    {jaula.numero}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="fecha_ingreso">Fecha de Ingreso *</Label>
+              <Input
+                id="fecha_ingreso"
+                name="fecha_ingreso"
+                type="date"
+                value={formData.fecha_ingreso}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="raza">Raza *</Label>
+              <Select
+                name="raza"
+                value={formData.raza}
+                onValueChange={(value) => handleSelectChange("raza", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar raza" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Rhode Island Red">
+                    Rhode Island Red
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  <SelectItem value="Leghorn Blanca">Leghorn Blanca</SelectItem>
+                  <SelectItem value="Plymouth Rock">Plymouth Rock</SelectItem>
+                  <SelectItem value="Sussex">Sussex</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
-          <div>
-            <Label htmlFor="estado">Estado</Label>
-            <Select
-              name="estado"
-              value={formData.estado}
-              onValueChange={(value) => handleSelectChange("estado", value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Activa">Activa</SelectItem>
-                <SelectItem value="Enferma">Enferma</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="jaula_id">Jaula</Label>
+              <Select
+                name="jaula_id"
+                value={String(formData.jaula_id)}
+                onValueChange={(value) =>
+                  handleSelectChange("jaula_id", value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar jaula" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="null">Sin asignar</SelectItem>
+                  {jaulas.map((jaula) => (
+                    <SelectItem key={jaula.id} value={String(jaula.id)}>
+                      {jaula.numero}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="estado">Estado</Label>
+              <Select
+                name="estado"
+                value={formData.estado}
+                onValueChange={(value) => handleSelectChange("estado", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Activa">Activa</SelectItem>
+                  <SelectItem value="Enferma">Enferma</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="peso">Peso (kg)</Label>
               <Input
@@ -204,14 +208,18 @@ export function AveFormModal({
               />
             </div>
           </div>
-
-          <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex flex-col-reverse gap-4 pt-4 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="w-full sm:w-auto"
+            >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="bg-teal-800 text-white hover:bg-teal-900"
+              className="w-full bg-teal-800 text-white hover:bg-teal-900 sm:w-auto"
             >
               {ave ? "Guardar Cambios" : "Crear Ave"}
             </Button>

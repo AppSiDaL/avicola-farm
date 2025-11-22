@@ -68,12 +68,15 @@ export async function deleteJaula(id: number) {
 }
 
 // Aves
-export async function getAves() {
+export async function getAves(page = 1, pageSize = 10) {
+  const offset = (page - 1) * pageSize;
   const aves = await sql`
     SELECT a.*, j.numero as jaula_numero
     FROM aves a
     LEFT JOIN jaulas j ON a.jaula_id = j.id
     ORDER BY a.fecha_ingreso DESC
+    LIMIT ${pageSize}
+    OFFSET ${offset}
   `
   return aves
 }
@@ -135,7 +138,14 @@ export async function getAvesStats() {
 }
 
 // Postura
-export async function getRegistrosPostura(jaulaId?: string, fechaInicio?: string, fechaFin?: string) {
+export async function getRegistrosPostura(
+  jaulaId?: string,
+  fechaInicio?: string,
+  fechaFin?: string,
+  page = 1,
+  pageSize = 10
+) {
+  const offset = (page - 1) * pageSize;
   let query = sql`
     SELECT rp.*, j.numero as jaula_numero
     FROM registros_postura rp
@@ -155,9 +165,33 @@ export async function getRegistrosPostura(jaulaId?: string, fechaInicio?: string
     query = sql`${query} AND rp.fecha <= ${fechaFin}`
   }
 
-  query = sql`${query} ORDER BY rp.fecha DESC, j.numero`
+  query = sql`${query} ORDER BY rp.fecha DESC, j.numero LIMIT ${pageSize} OFFSET ${offset}`
 
   return await query
+}
+
+export async function getRegistrosPosturaCount(
+  jaulaId?: string,
+  fechaInicio?: string,
+  fechaFin?: string
+) {
+  let query = sql`
+    SELECT COUNT(*) as total
+    FROM registros_postura rp
+    WHERE 1=1
+  `
+  if (jaulaId && jaulaId !== "todas") {
+    query = sql`${query} AND rp.jaula_id = ${Number.parseInt(jaulaId)}`
+  }
+  if (fechaInicio) {
+    query = sql`${query} AND rp.fecha >= ${fechaInicio}`
+  }
+  if (fechaFin) {
+    query = sql`${query} AND rp.fecha <= ${fechaFin}`
+  }
+
+  const result = await query;
+  return result[0].total;
 }
 
 export async function createRegistroPostura(data: {
@@ -236,7 +270,13 @@ export async function getPosturaStats(fechaInicio?: string, fechaFin?: string) {
 }
 
 // Ventas
-export async function getVentas(fecha?: string, cliente?: string) {
+export async function getVentas(
+  fecha?: string,
+  cliente?: string,
+  page = 1,
+  pageSize = 10
+) {
+  const offset = (page - 1) * pageSize;
   let query = sql`
     SELECT *
     FROM ventas
@@ -251,9 +291,28 @@ export async function getVentas(fecha?: string, cliente?: string) {
     query = sql`${query} AND cliente_nombre ILIKE ${`%${cliente}%`}`
   }
 
-  query = sql`${query} ORDER BY fecha DESC, id DESC`
+  query = sql`${query} ORDER BY fecha DESC, id DESC LIMIT ${pageSize} OFFSET ${offset}`
 
   return await query
+}
+
+export async function getVentasCount(fecha?: string, cliente?: string) {
+  let query = sql`
+    SELECT COUNT(*) as total
+    FROM ventas
+    WHERE 1=1
+  `
+
+  if (fecha) {
+    query = sql`${query} AND fecha = ${fecha}`
+  }
+
+  if (cliente) {
+    query = sql`${query} AND cliente_nombre ILIKE ${`%${cliente}%`}`
+  }
+
+  const result = await query;
+  return result[0].total;
 }
 
 export async function createVenta(data: {
@@ -304,6 +363,17 @@ export async function getVentasStats() {
   return stats[0]
 }
 
+export async function getVentasHoy() {
+  const today = new Date().toISOString().split("T")[0]
+  const ventas = await sql`
+    SELECT *
+    FROM ventas
+    WHERE fecha = ${today}
+    ORDER BY id DESC
+  `
+  return ventas
+}
+
 // Dashboard
 export async function getDashboardStats() {
   const [jaulasStats] = await sql`
@@ -314,13 +384,16 @@ export async function getDashboardStats() {
   `
 
   const avesStats = await getAvesStats()
-  const posturaStats = await getPosturaStats()
+  const today = new Date().toISOString().split("T")[0]
+  const posturaStats = await getPosturaStats(today, today)
   const ventasStats = await getVentasStats()
+  const ventasHoy = await getVentasHoy()
 
   return {
     jaulas: jaulasStats,
     aves: avesStats,
     postura: posturaStats,
     ventas: ventasStats,
+    ventasHoy,
   }
 }

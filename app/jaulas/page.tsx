@@ -60,7 +60,7 @@ function JaulasContent() {
       <NavHeader />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Gestión de Jaulas
@@ -71,18 +71,18 @@ function JaulasContent() {
           </div>
           <Button
             onClick={() => handleOpenModal()}
-            className="bg-teal-800 text-white hover:bg-teal-900"
+            className="w-full bg-teal-800 text-white hover:bg-teal-900 sm:w-auto"
           >
             + Nueva Jaula
           </Button>
         </div>
 
         <div className="mt-8 rounded-lg bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <span className="text-sm font-medium text-gray-700">
               Filtrar por estado:
             </span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {["Todas", "Activa", "Mantenimiento", "Inactiva"].map(
                 (estado) => (
                   <Button

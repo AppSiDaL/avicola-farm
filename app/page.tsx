@@ -124,42 +124,37 @@ export default async function HomePage() {
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <div className="rounded-lg border bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900">
-              Estado de las Jaulas
+              Ventas de Hoy
             </h2>
             <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between border-b pb-3">
-                <div>
-                  <p className="font-medium text-gray-900">Sector A</p>
-                  <p className="text-sm text-gray-600">Capacidad: aves</p>
-                </div>
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
-                  Activa
-                </span>
-              </div>
-              <div className="flex items-center justify-between border-b pb-3">
-                <div>
-                  <p className="font-medium text-gray-900">Sector B</p>
-                  <p className="text-sm text-gray-600">Capacidad: aves</p>
-                </div>
-                <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
-                  Mantenimiento
-                </span>
-              </div>
-              <div className="flex items-center justify-between border-b pb-3">
-                <div>
-                  <p className="font-medium text-gray-900">Sector C</p>
-                  <p className="text-sm text-gray-600">Capacidad: aves</p>
-                </div>
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
-                  Activa
-                </span>
-              </div>
+              {stats.ventasHoy.length === 0 ? (
+                <p className="text-sm text-gray-500">No hay ventas hoy.</p>
+              ) : (
+                stats.ventasHoy.map((venta) => (
+                  <div
+                    key={venta.id}
+                    className="flex items-center justify-between border-b pb-3"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {venta.cliente_nombre}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {venta.cantidad_kg} kg
+                      </p>
+                    </div>
+                    <span className="text-sm font-medium text-green-600">
+                      {formatter.format(venta.total)}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
             <Link
-              href="/jaulas"
+              href="/ventas"
               className="mt-4 block text-center text-sm font-medium text-teal-800 hover:text-teal-900"
             >
-              Ver todas las jaulas →
+              Ver todas las ventas →
             </Link>
           </div>
 

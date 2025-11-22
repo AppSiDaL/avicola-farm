@@ -115,64 +115,66 @@ export function PosturaFormModal({
             {registro ? "Editar Registro" : "Nuevo Registro de Postura"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="jaula_id">Jaula *</Label>
-            <Select
-              name="jaula_id"
-              value={String(formData.jaula_id)}
-              onValueChange={handleSelectChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar jaula" />
-              </SelectTrigger>
-              <SelectContent>
-                {jaulas.map((jaula) => (
-                  <SelectItem key={jaula.id} value={String(jaula.id)}>
-                    {jaula.numero}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="jaula_id">Jaula *</Label>
+              <Select
+                name="jaula_id"
+                value={String(formData.jaula_id)}
+                onValueChange={handleSelectChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar jaula" />
+                </SelectTrigger>
+                <SelectContent>
+                  {jaulas.map((jaula) => (
+                    <SelectItem key={jaula.id} value={String(jaula.id)}>
+                      {jaula.numero}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="fecha">Fecha *</Label>
+              <Input
+                id="fecha"
+                name="fecha"
+                type="date"
+                value={formData.fecha}
+                onChange={handleChange}
+                required
+              />
+            </div>
           </div>
-
-          <div>
-            <Label htmlFor="fecha">Fecha *</Label>
-            <Input
-              id="fecha"
-              name="fecha"
-              type="date"
-              value={formData.fecha}
-              onChange={handleChange}
-              required
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="huevos_recolectados">
+                Huevos Recolectados *
+              </Label>
+              <Input
+                id="huevos_recolectados"
+                name="huevos_recolectados"
+                type="number"
+                placeholder="120"
+                value={formData.huevos_recolectados}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="huevos_rotos">Huevos Rotos</Label>
+              <Input
+                id="huevos_rotos"
+                name="huevos_rotos"
+                type="number"
+                placeholder="5"
+                value={formData.huevos_rotos}
+                onChange={handleChange}
+              />
+            </div>
           </div>
-
-          <div>
-            <Label htmlFor="huevos_recolectados">Huevos Recolectados *</Label>
-            <Input
-              id="huevos_recolectados"
-              name="huevos_recolectados"
-              type="number"
-              placeholder="120"
-              value={formData.huevos_recolectados}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="huevos_rotos">Huevos Rotos</Label>
-            <Input
-              id="huevos_rotos"
-              name="huevos_rotos"
-              type="number"
-              placeholder="5"
-              value={formData.huevos_rotos}
-              onChange={handleChange}
-            />
-          </div>
-
           <div>
             <Label htmlFor="notas">Notas</Label>
             <Textarea
@@ -181,17 +183,21 @@ export function PosturaFormModal({
               placeholder="Observaciones adicionales..."
               value={formData.notas || ""}
               onChange={handleChange}
-              rows={4}
+              rows={3}
             />
           </div>
-
-          <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex flex-col-reverse gap-4 pt-4 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="w-full sm:w-auto"
+            >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="bg-teal-800 text-white hover:bg-teal-900"
+              className="w-full bg-teal-800 text-white hover:bg-teal-900 sm:w-auto"
             >
               {registro ? "Guardar Cambios" : "Crear Registro"}
             </Button>

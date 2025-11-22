@@ -106,18 +106,26 @@ export function VentaFormModal({
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end">
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Total de la venta</p>
-              <p className="text-3xl font-bold text-gray-900">${total.toFixed(2)}</p>
-            </div>
+          <div className="mt-6 rounded-lg bg-gray-50 p-4 text-center sm:text-right">
+            <p className="text-sm text-gray-600">Total de la venta</p>
+            <p className="text-3xl font-bold text-gray-900">
+              ${total.toFixed(2)}
+            </p>
           </div>
 
-          <div className="flex gap-4">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+          <div className="flex flex-col-reverse gap-4 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={onClose}
+            >
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 bg-teal-800 text-white hover:bg-teal-900">
+            <Button
+              type="submit"
+              className="flex-1 bg-teal-800 text-white hover:bg-teal-900"
+            >
               {venta ? "Guardar Cambios" : "Registrar Venta"}
             </Button>
           </div>

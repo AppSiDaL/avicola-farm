@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import {
   getRegistrosPostura,
+  getRegistrosPosturaCount,
   getPosturaStats,
   deleteRegistroPostura,
   getJaulas,
@@ -20,6 +21,16 @@ import {
 import { Suspense, useEffect, useState } from "react";
 import { NavHeader } from "@/components/nav-header";
 import { useSearchParams, useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Empty, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationLink,
+  PaginationNext,
+} from "@/components/ui/pagination";
 
 type RegistroPostura = {
   id: number;
@@ -50,6 +61,12 @@ function PosturaContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRegistro, setSelectedRegistro] =
     useState<RegistroPostura | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalRegistros, setTotalRegistros] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+
+  const totalPages = Math.ceil(totalRegistros / pageSize);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -58,20 +75,29 @@ function PosturaContent() {
   const fechaInicio = searchParams.get("fechaInicio") || "";
   const fechaFin = searchParams.get("fechaFin") || "";
 
-  async function loadData() {
-    const [fetchedRegistros, fetchedStats, fetchedJaulas] = await Promise.all([
-      getRegistrosPostura(jaulaId, fechaInicio, fechaFin),
+  async function loadData(page = 1) {
+    setIsLoading(true);
+    const [
+      fetchedRegistros,
+      fetchedTotal,
+      fetchedStats,
+      fetchedJaulas,
+    ] = await Promise.all([
+      getRegistrosPostura(jaulaId, fechaInicio, fechaFin, page, pageSize),
+      getRegistrosPosturaCount(jaulaId, fechaInicio, fechaFin),
       getPosturaStats(fechaInicio, fechaFin),
       getJaulas(),
     ]);
     setRegistros(fetchedRegistros as RegistroPostura[]);
+    setTotalRegistros(fetchedTotal as number);
     setStats(fetchedStats as Stats);
     setJaulas(fetchedJaulas as Jaula[]);
+    setIsLoading(false);
   }
 
   useEffect(() => {
-    loadData();
-  }, [jaulaId, fechaInicio, fechaFin]);
+    loadData(currentPage);
+  }, [jaulaId, fechaInicio, fechaFin, currentPage]);
 
   const handleOpenModal = (registro?: RegistroPostura) => {
     setSelectedRegistro(registro || null);
@@ -81,12 +107,12 @@ function PosturaContent() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRegistro(null);
-    loadData();
+    loadData(currentPage);
   };
 
   const handleDelete = async (id: number) => {
     await deleteRegistroPostura(id);
-    loadData();
+    loadData(currentPage);
   };
 
   const handleFilterChange = (
@@ -107,7 +133,7 @@ function PosturaContent() {
       <NavHeader />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Registro de Postura
@@ -118,7 +144,7 @@ function PosturaContent() {
           </div>
           <Button
             onClick={() => handleOpenModal()}
-            className="bg-teal-800 text-white hover:bg-teal-900"
+            className="w-full bg-teal-800 text-white hover:bg-teal-900 sm:w-auto"
           >
             + Nuevo Registro
           </Button>
@@ -152,7 +178,7 @@ function PosturaContent() {
         </div>
 
         <div className="mt-6 rounded-lg bg-white p-4 shadow-sm">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <Label>Jaula</Label>
               <Select
@@ -193,8 +219,8 @@ function PosturaContent() {
           </div>
         </div>
 
-        {registros.length > 0 ? (
-          <div className="mt-6 overflow-hidden rounded-lg border bg-white shadow-sm">
+        <div className="mt-6 overflow-hidden rounded-lg border bg-white shadow-sm">
+          <div className="hidden sm:block">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-orange-100">
                 <tr>
@@ -219,70 +245,245 @@ function PosturaContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {registros.map((registro) => (
-                  <tr key={registro.id}>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                      {new Date(registro.fecha).toLocaleDateString()}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                      {registro.jaula_numero}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                      {registro.huevos_recolectados}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-red-600">
-                      {registro.huevos_rotos}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                      {registro.notas}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenModal(registro)}
-                          className="border-orange-600 text-orange-600 hover:bg-orange-50"
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(registro.id)}
-                          className="border-red-600 text-red-600 hover:bg-red-50"
-                        >
-                          Eliminar
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {isLoading
+                  ? Array.from({ length: 5 }).map((_, index) => (
+                      <tr key={index}>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="flex gap-2">
+                            <Skeleton className="h-8 w-16" />
+                            <Skeleton className="h-8 w-16" />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  : registros.map((registro) => (
+                      <tr key={registro.id}>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {new Date(registro.fecha).toLocaleDateString()}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                          {registro.jaula_numero}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {registro.huevos_recolectados}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-red-600">
+                          {registro.huevos_rotos}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                          {registro.notas}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenModal(registro)}
+                              className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(registro.id)}
+                              className="border-red-600 text-red-600 hover:bg-red-50"
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
               </tbody>
             </table>
           </div>
-        ) : (
-          <div className="mt-6 rounded-lg border bg-gray-50 p-12 text-center shadow-sm">
-            <div className="mx-auto max-w-md">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-200">
-                <span className="text-3xl">🥚</span>
+          <div className="sm:hidden">
+            {isLoading ? (
+              <div className="space-y-4 p-4">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div key={index} className="rounded-lg border p-4">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="mt-2 h-4 w-1/2" />
+                    <Skeleton className="mt-2 h-4 w-1/4" />
+                    <div className="mt-4 flex gap-2">
+                      <Skeleton className="h-8 w-16" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                No hay registros
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                No hay registros de postura que coincidan con los filtros
-                seleccionados.
-              </p>
-              <Button
-                onClick={() => handleOpenModal()}
-                className="mt-4 bg-teal-800 text-white hover:bg-teal-900"
-              >
-                Crear Primer Registro
-              </Button>
-            </div>
+            ) : registros.length > 0 ? (
+              <div className="space-y-4 p-4">
+                {registros.map((registro) => (
+                  <div key={registro.id} className="rounded-lg border p-4">
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-gray-900">
+                        Jaula {registro.jaula_numero}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {new Date(registro.fecha).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex justify-between">
+                      <span className="text-sm text-gray-600">
+                        Recolectados: {registro.huevos_recolectados}
+                      </span>
+                      <span className="text-sm text-red-600">
+                        Rotos: {registro.huevos_rotos}
+                      </span>
+                    </div>
+                    {registro.notas && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        {registro.notas}
+                      </p>
+                    )}
+                    <div className="mt-4 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenModal(registro)}
+                        className="w-full border-orange-600 text-orange-600 hover:bg-orange-50"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(registro.id)}
+                        className="w-full border-red-600 text-red-600 hover:bg-red-50"
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12">
+                <Empty>
+                  <EmptyTitle>No hay registros de postura</EmptyTitle>
+                  <EmptyDescription>
+                    Comienza a agregar registros para verlos aquí.
+                  </EmptyDescription>
+                </Empty>
+              </div>
+            )}
           </div>
-        )}
+          {registros.length === 0 && !isLoading && (
+            <div className="hidden py-12 sm:block">
+              <Empty>
+                <EmptyTitle>No hay registros de postura</EmptyTitle>
+                <EmptyDescription>
+                  Comienza a agregar registros para verlos aquí.
+                </EmptyDescription>
+              </Empty>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <Button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  variant="outline"
+                >
+                  Anterior
+                </Button>
+                <Button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  variant="outline"
+                >
+                  Siguiente
+                </Button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Mostrando{" "}
+                    <span className="font-medium">
+                      {(currentPage - 1) * pageSize + 1}
+                    </span>{" "}
+                    a{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * pageSize, totalRegistros)}
+                    </span>{" "}
+                    de <span className="font-medium">{totalRegistros}</span>{" "}
+                    resultados
+                  </p>
+                </div>
+                <div>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage((prev) => Math.max(prev - 1, 1));
+                          }}
+                          className={
+                            currentPage === 1
+                              ? "pointer-events-none text-gray-400"
+                              : ""
+                          }
+                        />
+                      </PaginationItem>
+                      {[...Array(totalPages)].map((_, i) => (
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(i + 1);
+                            }}
+                            isActive={currentPage === i + 1}
+                          >
+                            {i + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages)
+                            );
+                          }}
+                          className={
+                            currentPage === totalPages
+                              ? "pointer-events-none text-gray-400"
+                              : ""
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       <PosturaFormModal

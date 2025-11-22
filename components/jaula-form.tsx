@@ -107,62 +107,62 @@ export function JaulaFormModal({
             {jaula ? "Editar Jaula" : "Nueva Jaula"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="numero">Número de Jaula *</Label>
-            <Input
-              id="numero"
-              name="numero"
-              placeholder="Ej: J-001"
-              value={formData.numero}
-              onChange={handleChange}
-              required
-            />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="numero">Número de Jaula *</Label>
+              <Input
+                id="numero"
+                name="numero"
+                placeholder="Ej: J-001"
+                value={formData.numero}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="ubicacion">Ubicación *</Label>
+              <Input
+                id="ubicacion"
+                name="ubicacion"
+                placeholder="Ej: Galpón A"
+                value={formData.ubicacion}
+                onChange={handleChange}
+                required
+              />
+            </div>
           </div>
-
-          <div>
-            <Label htmlFor="ubicacion">Ubicación *</Label>
-            <Input
-              id="ubicacion"
-              name="ubicacion"
-              placeholder="Ej: Galpón A - Zona Norte"
-              value={formData.ubicacion}
-              onChange={handleChange}
-              required
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="capacidad_maxima">Capacidad Máxima *</Label>
+              <Input
+                id="capacidad_maxima"
+                name="capacidad_maxima"
+                type="number"
+                placeholder="50"
+                value={formData.capacidad_maxima}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="estado">Estado</Label>
+              <Select
+                name="estado"
+                value={formData.estado}
+                onValueChange={handleSelectChange}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Activa">Activa</SelectItem>
+                  <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
+                  <SelectItem value="Inactiva">Inactiva</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
-          <div>
-            <Label htmlFor="capacidad_maxima">Capacidad Máxima *</Label>
-            <Input
-              id="capacidad_maxima"
-              name="capacidad_maxima"
-              type="number"
-              placeholder="50"
-              value={formData.capacidad_maxima}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="estado">Estado</Label>
-            <Select
-              name="estado"
-              value={formData.estado}
-              onValueChange={handleSelectChange}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Activa">Activa</SelectItem>
-                <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
-                <SelectItem value="Inactiva">Inactiva</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <div>
             <Label htmlFor="fecha_instalacion">Fecha de Instalación *</Label>
             <Input
@@ -174,7 +174,6 @@ export function JaulaFormModal({
               required
             />
           </div>
-
           <div>
             <Label htmlFor="notas">Notas</Label>
             <Textarea
@@ -183,17 +182,21 @@ export function JaulaFormModal({
               placeholder="Observaciones adicionales..."
               value={formData.notas || ""}
               onChange={handleChange}
-              rows={4}
+              rows={3}
             />
           </div>
-
-          <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex flex-col-reverse gap-4 pt-4 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="w-full sm:w-auto"
+            >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="bg-teal-800 text-white hover:bg-teal-900"
+              className="w-full bg-teal-800 text-white hover:bg-teal-900 sm:w-auto"
             >
               {jaula ? "Guardar Cambios" : "Crear Jaula"}
             </Button>
