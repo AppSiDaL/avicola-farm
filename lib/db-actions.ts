@@ -363,6 +363,13 @@ export async function getVentasStats() {
   return stats[0]
 }
 
+export async function getClientes() {
+  const clientes = await sql`
+    SELECT DISTINCT cliente_nombre FROM ventas ORDER BY cliente_nombre
+  `
+  return clientes
+}
+
 export async function getVentasHoy() {
   const today = new Date().toISOString().split("T")[0]
   const ventas = await sql`

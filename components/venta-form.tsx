@@ -9,14 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { createVenta, updateVenta } from "@/lib/db-actions";
+import { Combobox } from "@/components/ui/combobox";
+import { createVenta, updateVenta, getClientes } from "@/lib/db-actions";
 import { useEffect, useState } from "react";
 
 type Venta = {
@@ -41,9 +35,25 @@ export function VentaFormModal({
       cantidad_kg: 0,
     }
   );
+  const [clientes, setClientes] = useState<{ label: string; value: string }[]>(
+    []
+  );
 
   useEffect(() => {
+    async function fetchClientes() {
+      const fetchedClientes = (await getClientes()) as {
+        cliente_nombre: string;
+      }[];
+      setClientes(
+        fetchedClientes.map((c) => ({
+          label: c.cliente_nombre,
+          value: c.cliente_nombre,
+        }))
+      );
+    }
+
     if (isOpen) {
+      fetchClientes();
       if (venta) {
         setFormData({
           cliente_nombre: venta.cliente_nombre,
@@ -86,21 +96,51 @@ export function VentaFormModal({
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="cliente_nombre">Nombre del Cliente *</Label>
+              <Label className="mb-2" htmlFor="cliente_nombre">
+                Nombre del Cliente *
+              </Label>
+              <Combobox
+                options={clientes}
+                value={formData.cliente_nombre}
+                onChange={(value) =>
+                  setFormData({ ...formData, cliente_nombre: value })
+                }
+                placeholder="Seleccione o escriba un cliente"
+                emptyMessage="No se encontraron clientes."
+              />
               <Input
                 id="cliente_nombre"
                 value={formData.cliente_nombre}
-                onChange={(e) => setFormData({ ...formData, cliente_nombre: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, cliente_nombre: e.target.value })
+                }
                 required
+                className="mt-2"
+                placeholder="O escriba un nuevo nombre de cliente"
               />
             </div>
             <div>
-              <Label htmlFor="cantidad_kg">Cantidad (kg) *</Label>
+              <Label className="mb-2" htmlFor="cantidad_kg">
+                Cantidad (kg) *
+              </Label>
               <Input
                 id="cantidad_kg"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={formData.cantidad_kg}
-                onChange={(e) => setFormData({ ...formData, cantidad_kg: Number(e.target.value) })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
+                    setFormData({ ...formData, cantidad_kg: value as any });
+                  }
+                }}
+                onBlur={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setFormData({
+                    ...formData,
+                    cantidad_kg: isNaN(value) ? 0 : value,
+                  });
+                }}
                 required
               />
             </div>
