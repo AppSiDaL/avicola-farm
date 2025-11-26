@@ -39,7 +39,7 @@ export function VentaFormModal({
     venta || {
       cliente_nombre: "",
       cantidad_kg: 0,
-      estado: "Pendiente",
+      estado: "Pagado",
     }
   );
   const [clientes, setClientes] = useState<{ label: string; value: string }[]>(
@@ -71,7 +71,7 @@ export function VentaFormModal({
         setFormData({
           cliente_nombre: "",
           cantidad_kg: 0,
-          estado: "Pendiente",
+          estado: "Pagado",
         });
       }
     }
