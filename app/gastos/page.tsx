@@ -1,14 +1,21 @@
 "use client";
 
-import { VentaFormModal } from "@/components/venta-form";
+import { GastoFormModal } from "@/components/gasto-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  getVentas,
-  getVentasCount,
-  getVentasStats,
-  deleteVenta,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  getGastos,
+  getGastosCount,
+  getGastosStats,
+  deleteGasto,
 } from "@/lib/db-actions";
 import { useEffect, useState, Suspense } from "react";
 import { NavHeader } from "@/components/nav-header";
@@ -24,80 +31,97 @@ import {
   PaginationNext,
 } from "@/components/ui/pagination";
 
-type Venta = {
+type Gasto = {
   id: number;
   fecha: string;
-  cliente_nombre: string;
-  cantidad_kg: number;
-  total: number;
-  estado?: string;
+  categoria: "Alimento" | "Medicinas" | "Servicios" | "Equipos" | "Otros";
+  descripcion: string;
+  cantidad: number;
+  monto: number;
+  notas?: string | null;
 };
 
 type Stats = {
-  total_ventas: number;
-  ingresos_totales: number;
-  promedio_venta: number;
-  clientes_unicos: number;
+  total_gastos: number;
+  monto_total: number;
+  promedio_gasto: number;
+  categorias: number;
 };
 
-function VentasContent() {
-  const [ventas, setVentas] = useState<Venta[]>([]);
+const categoriaColors: Record<Gasto["categoria"], string> = {
+  "Alimento": "bg-amber-100 text-amber-800",
+  "Medicinas": "bg-red-100 text-red-800",
+  "Servicios": "bg-blue-100 text-blue-800",
+  "Equipos": "bg-purple-100 text-purple-800",
+  "Otros": "bg-gray-100 text-gray-800",
+};
+
+function GastosContent() {
+  const [gastos, setGastos] = useState<Gasto[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedVenta, setSelectedVenta] = useState<Venta | null>(null);
+  const [selectedGasto, setSelectedGasto] = useState<Gasto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [totalVentas, setTotalVentas] = useState(0);
+  const [totalGastos, setTotalGastos] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
 
-  const totalPages = Math.ceil(totalVentas / pageSize);
+  const totalPages = Math.ceil(totalGastos / pageSize);
 
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const fecha = searchParams.get("fecha") || "";
-  const cliente = searchParams.get("cliente") || "";
+  const categoria = searchParams.get("categoria") || "";
 
   async function loadData(page = 1) {
     setIsLoading(true);
-    const [fetchedVentas, fetchedTotal, fetchedStats] = await Promise.all([
-      getVentas(fecha, cliente, page, pageSize),
-      getVentasCount(fecha, cliente),
-      getVentasStats(),
-    ]);
-    setVentas(fetchedVentas as Venta[]);
-    setTotalVentas(fetchedTotal as number);
-    setStats(fetchedStats as Stats);
-    setIsLoading(false);
+    try {
+      const [fetchedGastos, fetchedTotal, fetchedStats] = await Promise.all([
+        getGastos(fecha || undefined, categoria || undefined, page, pageSize),
+        getGastosCount(fecha || undefined, categoria || undefined),
+        getGastosStats(),
+      ]);
+      setGastos(fetchedGastos as Gasto[]);
+      setTotalGastos(fetchedTotal as number);
+      setStats(fetchedStats as Stats);
+    } catch (error) {
+      console.error("Error loading gastos:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   useEffect(() => {
     loadData(currentPage);
-  }, [fecha, cliente, currentPage]);
+  }, [fecha, categoria, currentPage]);
 
-  const handleOpenModal = (venta?: Venta) => {
-    setSelectedVenta(venta || null);
+  const handleOpenModal = (gasto?: Gasto) => {
+    setSelectedGasto(gasto || null);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setSelectedVenta(null);
+    setSelectedGasto(null);
     loadData(currentPage);
   };
 
   const handleDelete = async (id: number) => {
-    await deleteVenta(id);
-    loadData(currentPage);
+    if (confirm("¿Estás seguro de que deseas eliminar este gasto?")) {
+      await deleteGasto(id);
+      loadData(currentPage);
+    }
   };
 
-  const handleFilterChange = (type: "fecha" | "cliente", value: string) => {
+  const handleFilterChange = (type: "fecha" | "categoria", value: string) => {
     const params = new URLSearchParams(searchParams);
     if (value) {
       params.set(type, value);
     } else {
       params.delete(type);
     }
+    setCurrentPage(1);
     router.push(`?${params.toString()}`);
   };
 
@@ -109,40 +133,44 @@ function VentasContent() {
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Gestión de Ventas
+              Gestión de Gastos
             </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Control y seguimiento de ventas de huevos
+              Control y seguimiento de gastos de la granja
             </p>
           </div>
           <Button
             onClick={() => handleOpenModal()}
             className="w-full bg-teal-800 text-white hover:bg-teal-900 sm:w-auto"
           >
-            + Nueva Venta
+            + Nuevo Gasto
           </Button>
         </div>
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <p className="text-sm text-gray-600">Total Ventas</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{stats?.total_ventas ?? 0}</p>
-          </div>
-          <div className="rounded-lg border bg-green-50 p-6 shadow-sm">
-            <p className="text-sm text-gray-600">Ingresos Totales</p>
+            <p className="text-sm text-gray-600">Total de Gastos</p>
             <p className="mt-2 text-3xl font-bold text-gray-900">
-              ${(stats?.ingresos_totales ?? 0).toLocaleString()}
+              {stats?.total_gastos ?? 0}
             </p>
           </div>
-          <div className="rounded-lg border bg-yellow-50 p-6 shadow-sm">
-            <p className="text-sm text-gray-600">Promedio por Venta</p>
+          <div className="rounded-lg border bg-red-50 p-6 shadow-sm">
+            <p className="text-sm text-gray-600">Monto Total</p>
+            <p className="mt-2 text-3xl font-bold text-red-700">
+              ${(stats?.monto_total ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          </div>
+          <div className="rounded-lg border bg-orange-50 p-6 shadow-sm">
+            <p className="text-sm text-gray-600">Promedio por Gasto</p>
             <p className="mt-2 text-3xl font-bold text-gray-900">
-              ${Math.round(stats?.promedio_venta ?? 0)}
+              ${Math.round(stats?.promedio_gasto ?? 0)}
             </p>
           </div>
           <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <p className="text-sm text-gray-600">Clientes Únicos</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{stats?.clientes_unicos ?? 0}</p>
+            <p className="text-sm text-gray-600">Categorías</p>
+            <p className="mt-2 text-3xl font-bold text-gray-900">
+              {stats?.categorias ?? 0}
+            </p>
           </div>
         </div>
 
@@ -158,14 +186,25 @@ function VentasContent() {
               />
             </div>
             <div className="flex-1">
-              <Label>Filtrar por Cliente:</Label>
-              <Input
-                type="text"
-                className="mt-1"
-                placeholder="Buscar cliente..."
-                value={cliente}
-                onChange={(e) => handleFilterChange("cliente", e.target.value)}
-              />
+              <Label>Filtrar por Categoría:</Label>
+              <Select
+                value={categoria}
+                onValueChange={(value) =>
+                  handleFilterChange("categoria", value)
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Todas las categorías" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas las categorías</SelectItem>
+                  <SelectItem value="Alimento">Alimento</SelectItem>
+                  <SelectItem value="Medicinas">Medicinas</SelectItem>
+                  <SelectItem value="Servicios">Servicios</SelectItem>
+                  <SelectItem value="Equipos">Equipos</SelectItem>
+                  <SelectItem value="Otros">Otros</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -179,16 +218,19 @@ function VentasContent() {
                     Fecha
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
-                    Cliente
+                    Categoría
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
-                    Cantidad (kg)
+                    Descripción
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
-                    Total
+                    Cantidad
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
-                    Estado
+                    Monto
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
+                    Notas
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
                     Acciones
@@ -203,7 +245,7 @@ function VentasContent() {
                           <Skeleton className="h-4 w-24" />
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-6 w-20 rounded-full" />
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <Skeleton className="h-4 w-20" />
@@ -213,6 +255,9 @@ function VentasContent() {
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-24" />
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex gap-2">
@@ -222,37 +267,40 @@ function VentasContent() {
                         </td>
                       </tr>
                     ))
-                  : ventas.map((venta) => (
-                      <tr key={venta.id}>
+                  : gastos.map((gasto) => (
+                      <tr key={gasto.id}>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                          {new Date(venta.fecha).toLocaleDateString()}
+                          {new Date(gasto.fecha).toLocaleDateString()}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                              categoriaColors[gasto.categoria]
+                            }`}
+                          >
+                            {gasto.categoria}
+                          </span>
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <div className="font-medium text-gray-900">
-                            {venta.cliente_nombre}
+                            {gasto.descripcion}
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                          {venta.cantidad_kg}
+                          {gasto.cantidad.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                          ${venta.total}
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-red-600">
+                          ${gasto.monto.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            venta.estado === 'Pagado'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {venta.estado || 'Pendiente'}
-                          </span>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                          {gasto.notas || "-"}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex gap-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleOpenModal(venta)}
+                              onClick={() => handleOpenModal(gasto)}
                               className="border-orange-600 text-orange-600 hover:bg-orange-50"
                             >
                               Editar
@@ -260,7 +308,7 @@ function VentasContent() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDelete(venta.id)}
+                              onClick={() => handleDelete(gasto.id)}
                               className="border-red-600 text-red-600 hover:bg-red-50"
                             >
                               Eliminar
@@ -287,40 +335,46 @@ function VentasContent() {
                   </div>
                 ))}
               </div>
-            ) : ventas.length > 0 ? (
+            ) : gastos.length > 0 ? (
               <div className="space-y-4 p-4">
-                {ventas.map((venta) => (
-                  <div key={venta.id} className="rounded-lg border p-4">
+                {gastos.map((gasto) => (
+                  <div key={gasto.id} className="rounded-lg border p-4">
                     <div className="flex justify-between">
                       <span className="font-semibold text-gray-900">
-                        {venta.cliente_nombre}
+                        {gasto.descripcion}
                       </span>
-                      <span className="text-sm text-gray-600">
-                        {new Date(venta.fecha).toLocaleDateString()}
+                      <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                          categoriaColors[gasto.categoria]
+                        }`}
+                      >
+                        {gasto.categoria}
                       </span>
                     </div>
                     <div className="mt-2 flex justify-between">
                       <span className="text-sm text-gray-600">
-                        {venta.cantidad_kg} kg
+                        {new Date(gasto.fecha).toLocaleDateString()}
                       </span>
-                      <span className="font-semibold text-gray-900">
-                        ${venta.total}
-                      </span>
-                    </div>
-                    <div className="mt-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        venta.estado === 'Pagado'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {venta.estado || 'Pendiente'}
+                      <span className="text-sm text-gray-600">
+                        Cantidad: {gasto.cantidad.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
+                    <div className="mt-2 flex justify-between">
+                      <span className="text-sm text-gray-600">Monto:</span>
+                      <span className="font-semibold text-red-600">
+                        ${gasto.monto.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    {gasto.notas && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        {gasto.notas}
+                      </p>
+                    )}
                     <div className="mt-4 flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenModal(venta)}
+                        onClick={() => handleOpenModal(gasto)}
                         className="flex-1 border-orange-600 text-orange-600 hover:bg-orange-50"
                       >
                         Editar
@@ -328,7 +382,7 @@ function VentasContent() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDelete(venta.id)}
+                        onClick={() => handleDelete(gasto.id)}
                         className="flex-1 border-red-600 text-red-600 hover:bg-red-50"
                       >
                         Eliminar
@@ -340,20 +394,20 @@ function VentasContent() {
             ) : (
               <div className="py-12">
                 <Empty>
-                  <EmptyTitle>No hay ventas registradas</EmptyTitle>
+                  <EmptyTitle>No hay gastos registrados</EmptyTitle>
                   <EmptyDescription>
-                    Comienza a agregar ventas para verlas aquí.
+                    Comienza a agregar gastos para verlos aquí.
                   </EmptyDescription>
                 </Empty>
               </div>
             )}
           </div>
-          {ventas.length === 0 && !isLoading && (
+          {gastos.length === 0 && !isLoading && (
             <div className="hidden py-12 sm:block">
               <Empty>
-                <EmptyTitle>No hay ventas registradas</EmptyTitle>
+                <EmptyTitle>No hay gastos registrados</EmptyTitle>
                 <EmptyDescription>
-                  Comienza a agregar ventas para verlas aquí.
+                  Comienza a agregar gastos para verlos aquí.
                 </EmptyDescription>
               </Empty>
             </div>
@@ -387,9 +441,9 @@ function VentasContent() {
                     </span>{" "}
                     a{" "}
                     <span className="font-medium">
-                      {Math.min(currentPage * pageSize, totalVentas)}
+                      {Math.min(currentPage * pageSize, totalGastos)}
                     </span>{" "}
-                    de <span className="font-medium">{totalVentas}</span>{" "}
+                    de <span className="font-medium">{totalGastos}</span>{" "}
                     resultados
                   </p>
                 </div>
@@ -449,19 +503,25 @@ function VentasContent() {
         </div>
       </main>
 
-      <VentaFormModal
+      <GastoFormModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        venta={selectedVenta}
+        gasto={selectedGasto}
       />
     </div>
   );
 }
 
-export default function VentasPage() {
+export default function GastosPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Cargando...</div>}>
-      <VentasContent />
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          Cargando...
+        </div>
+      }
+    >
+      <GastosContent />
     </Suspense>
   );
 }

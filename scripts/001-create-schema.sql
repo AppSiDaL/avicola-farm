@@ -44,6 +44,20 @@ CREATE TABLE IF NOT EXISTS ventas (
   cliente_nombre VARCHAR(255) NOT NULL,
   cantidad_kg DECIMAL(10, 2) NOT NULL,
   total DECIMAL(10, 2) NOT NULL,
+  estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Gastos
+CREATE TABLE IF NOT EXISTS gastos (
+  id SERIAL PRIMARY KEY,
+  fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+  categoria VARCHAR(50) NOT NULL,
+  descripcion VARCHAR(255) NOT NULL,
+  cantidad DECIMAL(10, 2) NOT NULL DEFAULT 1,
+  monto DECIMAL(10, 2) NOT NULL,
+  notas TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -54,3 +68,5 @@ CREATE INDEX IF NOT EXISTS idx_aves_estado ON aves(estado);
 CREATE INDEX IF NOT EXISTS idx_registros_postura_jaula ON registros_postura(jaula_id);
 CREATE INDEX IF NOT EXISTS idx_registros_postura_fecha ON registros_postura(fecha);
 CREATE INDEX IF NOT EXISTS idx_ventas_fecha ON ventas(fecha);
+CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha);
+CREATE INDEX IF NOT EXISTS idx_gastos_categoria ON gastos(categoria);

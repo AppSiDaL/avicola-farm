@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,6 +8,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createVenta, updateVenta, getClientes } from "@/lib/db-actions";
 import { useEffect, useState } from "react";
 
@@ -18,6 +23,7 @@ type Venta = {
   cliente_nombre: string;
   cantidad_kg: number;
   total: number;
+  estado?: string;
 };
 
 export function VentaFormModal({
@@ -33,6 +39,7 @@ export function VentaFormModal({
     venta || {
       cliente_nombre: "",
       cantidad_kg: 0,
+      estado: "Pendiente",
     }
   );
   const [clientes, setClientes] = useState<{ label: string; value: string }[]>(
@@ -58,11 +65,13 @@ export function VentaFormModal({
         setFormData({
           cliente_nombre: venta.cliente_nombre,
           cantidad_kg: venta.cantidad_kg,
+          estado: venta.estado || "Pendiente",
         });
       } else {
         setFormData({
           cliente_nombre: "",
           cantidad_kg: 0,
+          estado: "Pendiente",
         });
       }
     }
@@ -143,6 +152,25 @@ export function VentaFormModal({
                 }}
                 required
               />
+            </div>
+            <div>
+              <Label className="mb-2" htmlFor="estado">
+                Estado de la Venta *
+              </Label>
+              <Select
+                value={formData.estado || "Pendiente"}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, estado: value })
+                }
+              >
+                <SelectTrigger id="estado">
+                  <SelectValue placeholder="Seleccione un estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pendiente">Pendiente</SelectItem>
+                  <SelectItem value="Pagado">Pagado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

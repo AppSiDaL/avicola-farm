@@ -319,10 +319,11 @@ export async function createVenta(data: {
   cliente_nombre: string;
   cantidad_kg: number;
   total: number;
+  estado?: string;
 }) {
   await sql`
-    INSERT INTO ventas (cliente_nombre, cantidad_kg, total)
-    VALUES (${data.cliente_nombre}, ${data.cantidad_kg}, ${data.total})
+    INSERT INTO ventas (cliente_nombre, cantidad_kg, total, estado)
+    VALUES (${data.cliente_nombre}, ${data.cantidad_kg}, ${data.total}, ${data.estado || 'Pendiente'})
   `
   revalidatePath("/ventas")
 }
@@ -333,13 +334,15 @@ export async function updateVenta(
     cliente_nombre: string;
     cantidad_kg: number;
     total: number;
+    estado?: string;
   }
 ) {
   await sql`
     UPDATE ventas
     SET cliente_nombre = ${data.cliente_nombre},
         cantidad_kg = ${data.cantidad_kg},
-        total = ${data.total}
+        total = ${data.total},
+        estado = ${data.estado || 'Pendiente'}
     WHERE id = ${id}
   `
   revalidatePath("/ventas")
@@ -403,4 +406,106 @@ export async function getDashboardStats() {
     ventas: ventasStats,
     ventasHoy,
   }
+}
+
+// Gastos
+export async function getGastos(
+  fecha?: string,
+  categoria?: string,
+  page = 1,
+  pageSize = 10
+) {
+  const offset = (page - 1) * pageSize;
+  let query = sql`
+    SELECT *
+    FROM gastos
+    WHERE 1=1
+  `
+
+  if (fecha) {
+    query = sql`${query} AND fecha = ${fecha}`
+  }
+
+  if (categoria && categoria !== "todas") {
+    query = sql`${query} AND categoria = ${categoria}`
+  }
+
+  query = sql`${query} ORDER BY fecha DESC, id DESC LIMIT ${pageSize} OFFSET ${offset}`
+
+  return await query
+}
+
+export async function getGastosCount(fecha?: string, categoria?: string) {
+  let query = sql`
+    SELECT COUNT(*) as total
+    FROM gastos
+    WHERE 1=1
+  `
+
+  if (fecha) {
+    query = sql`${query} AND fecha = ${fecha}`
+  }
+
+  if (categoria && categoria !== "todas") {
+    query = sql`${query} AND categoria = ${categoria}`
+  }
+
+  const result = await query;
+  return result[0].total;
+}
+
+export async function createGasto(data: {
+  fecha: string;
+  categoria: "Alimento" | "Medicinas" | "Servicios" | "Equipos" | "Otros";
+  descripcion: string;
+  cantidad: number;
+  monto: number;
+  notas?: string;
+}) {
+  await sql`
+    INSERT INTO gastos (fecha, categoria, descripcion, cantidad, monto, notas)
+    VALUES (${data.fecha}, ${data.categoria}, ${data.descripcion}, ${data.cantidad}, ${data.monto}, ${data.notas || null})
+  `
+  revalidatePath("/gastos")
+}
+
+export async function updateGasto(
+  id: number,
+  data: {
+    fecha: string;
+    categoria: "Alimento" | "Medicinas" | "Servicios" | "Equipos" | "Otros";
+    descripcion: string;
+    cantidad: number;
+    monto: number;
+    notas?: string;
+  }
+) {
+  await sql`
+    UPDATE gastos
+    SET fecha = ${data.fecha},
+        categoria = ${data.categoria},
+        descripcion = ${data.descripcion},
+        cantidad = ${data.cantidad},
+        monto = ${data.monto},
+        notas = ${data.notas || null}
+    WHERE id = ${id}
+  `
+  revalidatePath("/gastos")
+}
+
+export async function deleteGasto(id: number) {
+  await sql`DELETE FROM gastos WHERE id = ${id}`
+  revalidatePath("/gastos")
+}
+
+export async function getGastosStats() {
+  const stats = await sql`
+    SELECT 
+      COUNT(*) as total_gastos,
+      COALESCE(SUM(monto), 0) as monto_total,
+      COALESCE(AVG(monto), 0) as promedio_gasto,
+      COUNT(DISTINCT categoria) as categorias
+    FROM gastos
+  `
+  return stats[0]
 }

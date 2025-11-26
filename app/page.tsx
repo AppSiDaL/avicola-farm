@@ -205,7 +205,7 @@ export default async function HomePage() {
 
         <div className="mt-8">
           <h2 className="text-lg font-semibold text-gray-900">Acceso Rápido</h2>
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
             <Link
               href="/jaulas"
               className="group rounded-lg border bg-white p-6 shadow-sm transition hover:shadow-md"
@@ -286,6 +286,33 @@ export default async function HomePage() {
                 <div>
                   <h3 className="font-semibold text-gray-900">Ventas</h3>
                   <p className="text-sm text-gray-600">Seguimiento</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/gastos"
+              className="group rounded-lg border bg-white p-6 shadow-sm transition hover:shadow-md"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 transition group-hover:bg-red-200">
+                  <svg
+                    className="h-5 w-5 text-red-800"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Gastos</h3>
+                  <p className="text-sm text-gray-600">Control</p>
                 </div>
               </div>
             </Link>
