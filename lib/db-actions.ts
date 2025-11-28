@@ -3,20 +3,22 @@
 import { sql } from "./db"
 import { revalidatePath } from "next/cache"
 
-export async function getJaulas() {
-  const jaulas = await sql`
-    SELECT j.*, 
+// Galpones
+export async function getGalpones() {
+  const galpones = await sql`
+    SELECT g.*, 
            COUNT(a.id) as total_aves
-    FROM jaulas j
+    FROM galpones g
+    LEFT JOIN jaulas j ON j.galpon_id = g.id
     LEFT JOIN aves a ON a.jaula_id = j.id AND a.estado = 'Activa'
-    GROUP BY j.id
-    ORDER BY j.numero
+    GROUP BY g.id
+    ORDER BY g.nombre
   `
-  return jaulas
+  return galpones
 }
 
-export async function createJaula(data: {
-  numero: string
+export async function createGalpon(data: {
+  nombre: string
   ubicacion: string
   capacidad_maxima: number
   estado: string
@@ -24,8 +26,75 @@ export async function createJaula(data: {
   notas?: string
 }) {
   await sql`
-    INSERT INTO jaulas (numero, ubicacion, capacidad_maxima, estado, fecha_instalacion, notas)
-    VALUES (${data.numero}, ${data.ubicacion}, ${data.capacidad_maxima}, ${data.estado}, ${data.fecha_instalacion}, ${data.notas || null})
+    INSERT INTO galpones (nombre, ubicacion, capacidad_maxima, estado, fecha_instalacion, notas)
+    VALUES (${data.nombre}, ${data.ubicacion}, ${data.capacidad_maxima}, ${data.estado}, ${data.fecha_instalacion}, ${data.notas || null})
+  `
+  revalidatePath("/galpones")
+}
+
+export async function getGalponById(id: number) {
+  const galpon = await sql`
+    SELECT * FROM galpones WHERE id = ${id}
+  `
+  return galpon[0]
+}
+
+export async function updateGalpon(
+  id: number,
+  data: {
+    nombre: string
+    ubicacion: string
+    capacidad_maxima: number
+    estado: string
+    fecha_instalacion: string
+    notas?: string
+  }
+) {
+  await sql`
+    UPDATE galpones
+    SET nombre = ${data.nombre},
+        ubicacion = ${data.ubicacion},
+        capacidad_maxima = ${data.capacidad_maxima},
+        estado = ${data.estado},
+        fecha_instalacion = ${data.fecha_instalacion},
+        notas = ${data.notas || null}
+    WHERE id = ${id}
+  `
+  revalidatePath("/galpones")
+  revalidatePath(`/galpones/${id}/editar`)
+}
+
+export async function deleteGalpon(id: number) {
+  await sql`DELETE FROM galpones WHERE id = ${id}`
+  revalidatePath("/galpones")
+}
+
+// Jaulas
+export async function getJaulas() {
+  const jaulas = await sql`
+    SELECT j.*, 
+           g.nombre as galpon_nombre,
+           COUNT(a.id) as total_aves
+    FROM jaulas j
+    JOIN galpones g ON j.galpon_id = g.id
+    LEFT JOIN aves a ON a.jaula_id = j.id AND a.estado = 'Activa'
+    GROUP BY j.id, g.nombre
+    ORDER BY g.nombre, j.numero
+  `
+  return jaulas
+}
+
+export async function createJaula(data: {
+  numero: string
+  galpon_id: number
+  capacidad_maxima: number
+  estado: string
+  fecha_instalacion: string
+  notas?: string
+}) {
+  await sql`
+    INSERT INTO jaulas (numero, galpon_id, capacidad_maxima, estado, fecha_instalacion, notas)
+    VALUES (${data.numero}, ${data.galpon_id}, ${data.capacidad_maxima}, ${data.estado}, ${data.fecha_instalacion}, ${data.notas || null})
   `
   revalidatePath("/jaulas")
 }
@@ -41,7 +110,7 @@ export async function updateJaula(
   id: number,
   data: {
     numero: string
-    ubicacion: string
+    galpon_id: number
     capacidad_maxima: number
     estado: string
     fecha_instalacion: string
@@ -51,7 +120,7 @@ export async function updateJaula(
   await sql`
     UPDATE jaulas
     SET numero = ${data.numero},
-        ubicacion = ${data.ubicacion},
+        galpon_id = ${data.galpon_id},
         capacidad_maxima = ${data.capacidad_maxima},
         estado = ${data.estado},
         fecha_instalacion = ${data.fecha_instalacion},
@@ -67,13 +136,15 @@ export async function deleteJaula(id: number) {
   revalidatePath("/jaulas")
 }
 
+
 // Aves
 export async function getAves(page = 1, pageSize = 10) {
   const offset = (page - 1) * pageSize;
   const aves = await sql`
-    SELECT a.*, j.numero as jaula_numero
+    SELECT a.*, j.numero as jaula_numero, g.nombre as galpon_nombre
     FROM aves a
     LEFT JOIN jaulas j ON a.jaula_id = j.id
+    LEFT JOIN galpones g ON j.galpon_id = g.id
     ORDER BY a.fecha_ingreso DESC
     LIMIT ${pageSize}
     OFFSET ${offset}
@@ -139,22 +210,35 @@ export async function getAvesStats() {
 
 // Postura
 export async function getRegistrosPostura(
-  jaulaId?: string,
+  filter: { type: 'jaula' | 'galpon', id?: string },
   fechaInicio?: string,
   fechaFin?: string,
   page = 1,
   pageSize = 10
 ) {
   const offset = (page - 1) * pageSize;
+  
   let query = sql`
-    SELECT rp.*, j.numero as jaula_numero
+    SELECT 
+      rp.id,
+      rp.fecha,
+      rp.huevos_recolectados,
+      rp.huevos_rotos,
+      rp.notas,
+      j.numero as jaula_numero,
+      g.nombre as galpon_nombre
     FROM registros_postura rp
-    JOIN jaulas j ON rp.jaula_id = j.id
+    LEFT JOIN jaulas j ON rp.jaula_id = j.id
+    LEFT JOIN galpones g ON rp.galpon_id = g.id OR j.galpon_id = g.id
     WHERE 1=1
   `
 
-  if (jaulaId && jaulaId !== "todas") {
-    query = sql`${query} AND rp.jaula_id = ${Number.parseInt(jaulaId)}`
+  if (filter.id && filter.id !== "todos") {
+    if (filter.type === 'jaula') {
+      query = sql`${query} AND rp.jaula_id = ${Number.parseInt(filter.id)}`
+    } else if (filter.type === 'galpon') {
+      query = sql`${query} AND (rp.galpon_id = ${Number.parseInt(filter.id)} OR j.galpon_id = ${Number.parseInt(filter.id)})`
+    }
   }
 
   if (fechaInicio) {
@@ -165,23 +249,28 @@ export async function getRegistrosPostura(
     query = sql`${query} AND rp.fecha <= ${fechaFin}`
   }
 
-  query = sql`${query} ORDER BY rp.fecha DESC, j.numero LIMIT ${pageSize} OFFSET ${offset}`
+  query = sql`${query} ORDER BY rp.fecha DESC, g.nombre, j.numero LIMIT ${pageSize} OFFSET ${offset}`
 
   return await query
 }
 
 export async function getRegistrosPosturaCount(
-  jaulaId?: string,
+  filter: { type: 'jaula' | 'galpon', id?: string },
   fechaInicio?: string,
   fechaFin?: string
 ) {
   let query = sql`
-    SELECT COUNT(*) as total
+    SELECT COUNT(rp.id) as total
     FROM registros_postura rp
+    LEFT JOIN jaulas j ON rp.jaula_id = j.id
     WHERE 1=1
   `
-  if (jaulaId && jaulaId !== "todas") {
-    query = sql`${query} AND rp.jaula_id = ${Number.parseInt(jaulaId)}`
+  if (filter.id && filter.id !== "todos") {
+    if (filter.type === 'jaula') {
+      query = sql`${query} AND rp.jaula_id = ${Number.parseInt(filter.id)}`
+    } else if (filter.type === 'galpon') {
+      query = sql`${query} AND (rp.galpon_id = ${Number.parseInt(filter.id)} OR j.galpon_id = ${Number.parseInt(filter.id)})`
+    }
   }
   if (fechaInicio) {
     query = sql`${query} AND rp.fecha >= ${fechaInicio}`
@@ -195,28 +284,74 @@ export async function getRegistrosPosturaCount(
 }
 
 export async function createRegistroPostura(data: {
-  jaula_id: number
-  fecha: string
-  huevos_recolectados: number
-  huevos_rotos: number
-  notas?: string
+  jaula_id?: number;
+  galpon_id?: number;
+  fecha: string;
+  huevos_recolectados: number;
+  huevos_rotos: number;
+  notas?: string;
 }) {
-  await sql`
-    INSERT INTO registros_postura (jaula_id, fecha, huevos_recolectados, huevos_rotos, notas)
-    VALUES (${data.jaula_id}, ${data.fecha}, ${data.huevos_recolectados}, ${data.huevos_rotos}, ${data.notas || null})
-    ON CONFLICT (jaula_id, fecha) 
-    DO UPDATE SET 
-      huevos_recolectados = ${data.huevos_recolectados},
-      huevos_rotos = ${data.huevos_rotos},
-      notas = ${data.notas || null}
-  `
-  revalidatePath("/postura")
+  const { jaula_id, galpon_id, fecha, huevos_recolectados, huevos_rotos, notas } = data;
+
+  // Validación
+  if (galpon_id) {
+    // Si se registra por galpón, verificar que no haya registros para sus jaulas en la misma fecha
+    const jaulasEnGalpon = await sql`SELECT id FROM jaulas WHERE galpon_id = ${galpon_id}`;
+    const jaulaIds = jaulasEnGalpon.map(j => j.id);
+    if (jaulaIds.length > 0) {
+      const existing = await sql`
+        SELECT id FROM registros_postura 
+        WHERE fecha = ${fecha} AND jaula_id = ANY(${jaulaIds})
+      `;
+      if (existing.length > 0) {
+        throw new Error("Ya existen registros de postura para las jaulas de este galpón en esta fecha.");
+      }
+    }
+  } else if (jaula_id) {
+    // Si se registra por jaula, verificar que no haya un registro para el galpón en la misma fecha
+    const [jaula] = await sql`SELECT galpon_id FROM jaulas WHERE id = ${jaula_id}`;
+    if (jaula) {
+      const existing = await sql`
+        SELECT id FROM registros_postura 
+        WHERE fecha = ${fecha} AND galpon_id = ${jaula.galpon_id}
+      `;
+      if (existing.length > 0) {
+        throw new Error("Ya existe un registro de postura para el galpón completo en esta fecha.");
+      }
+    }
+  }
+
+  if (galpon_id) {
+    await sql`
+      INSERT INTO registros_postura (galpon_id, fecha, huevos_recolectados, huevos_rotos, notas)
+      VALUES (${galpon_id}, ${fecha}, ${huevos_recolectados}, ${huevos_rotos}, ${notas || null})
+      ON CONFLICT (fecha, galpon_id)
+      DO UPDATE SET 
+        huevos_recolectados = ${huevos_recolectados},
+        huevos_rotos = ${huevos_rotos},
+        notas = ${notas || null}
+    `;
+  } else if (jaula_id) {
+    await sql`
+      INSERT INTO registros_postura (jaula_id, fecha, huevos_recolectados, huevos_rotos, notas)
+      VALUES (${jaula_id}, ${fecha}, ${huevos_recolectados}, ${huevos_rotos}, ${notas || null})
+      ON CONFLICT (fecha, jaula_id)
+      DO UPDATE SET 
+        huevos_recolectados = ${huevos_recolectados},
+        huevos_rotos = ${huevos_rotos},
+        notas = ${notas || null}
+    `;
+  }
+
+  revalidatePath("/postura");
 }
+
 
 export async function updateRegistroPostura(
   id: number,
   data: {
-    jaula_id: number
+    jaula_id?: number
+    galpon_id?: number
     fecha: string
     huevos_recolectados: number
     huevos_rotos: number
@@ -225,7 +360,8 @@ export async function updateRegistroPostura(
 ) {
   await sql`
     UPDATE registros_postura
-    SET jaula_id = ${data.jaula_id},
+    SET jaula_id = ${data.jaula_id || null},
+        galpon_id = ${data.galpon_id || null},
         fecha = ${data.fecha},
         huevos_recolectados = ${data.huevos_recolectados},
         huevos_rotos = ${data.huevos_rotos},
@@ -399,8 +535,16 @@ export async function getDashboardStats() {
   const ventasStats = await getVentasStats()
   const ventasHoy = await getVentasHoy()
 
+  const [galponesStats] = await sql`
+    SELECT 
+      COUNT(*) as total,
+      COUNT(CASE WHEN estado = 'Activo' THEN 1 END) as activos
+    FROM galpones
+  `
+
   return {
     jaulas: jaulasStats,
+    galpones: galponesStats,
     aves: avesStats,
     postura: posturaStats,
     ventas: ventasStats,
@@ -495,7 +639,7 @@ export async function updateGasto(
 
 export async function deleteGasto(id: number) {
   await sql`DELETE FROM gastos WHERE id = ${id}`
-  revalidatePath("/gastos")
+  revalidatePath("/gastas")
 }
 
 export async function getGastosStats() {
