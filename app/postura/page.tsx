@@ -332,7 +332,102 @@ function PosturaContent() {
               </tbody>
             </table>
           </div>
-          {/* Mobile view and pagination remains similar, adjust if needed */}
+          <div className="sm:hidden">
+            {isLoading
+              ? Array.from({ length: 5 }).map((_, index) => (
+                  <div key={index} className="border-b p-4">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="mt-2 h-4 w-1/2" />
+                    <Skeleton className="mt-2 h-4 w-1/4" />
+                  </div>
+                ))
+              : registros.map((registro) => (
+                  <div
+                    key={registro.id}
+                    className="flex flex-col gap-y-2 border-b p-4"
+                  >
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        {new Date(registro.fecha).toLocaleDateString()}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {registro.jaula_numero ? `Jaula ${registro.jaula_numero}` : `Galpón ${registro.galpon_nombre}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">
+                        Recolectados: {registro.huevos_recolectados}
+                      </span>
+                      <span className="text-sm text-red-600">
+                        Rotos: {registro.huevos_rotos}
+                      </span>
+                    </div>
+                    {registro.notas && (
+                      <p className="text-sm text-gray-600">{registro.notas}</p>
+                    )}
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button variant="outline" size="sm" onClick={() => handleOpenModal(registro)} className="border-orange-600 text-orange-600 hover:bg-orange-50">
+                        Editar
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleDelete(registro.id)} className="border-red-600 text-red-600 hover:bg-red-50">
+                        Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+          </div>
+
+          {registros.length === 0 && !isLoading && (
+            <Empty className="py-12">
+              <EmptyTitle>No hay registros</EmptyTitle>
+              <EmptyDescription>
+                Aún no se han añadido registros de postura.
+              </EmptyDescription>
+            </Empty>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex justify-center p-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage((prev) => Math.max(prev - 1, 1));
+                      }}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        href="#"
+                        isActive={currentPage === i + 1}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentPage(i + 1);
+                        }}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage((prev) =>
+                          Math.min(prev + 1, totalPages)
+                        );
+                      }}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </div>
       </main>
 
