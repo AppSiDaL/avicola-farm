@@ -458,9 +458,10 @@ export async function createVenta(data: {
   estado?: string;
 }) {
   await sql`
-    INSERT INTO ventas (cliente_nombre, cantidad_kg, total, estado)
-    VALUES (${data.cliente_nombre}, ${data.cantidad_kg}, ${data.total}, ${data.estado || 'Pendiente'})
-  `
+    INSERT INTO ventas (id, cliente_nombre, cantidad_kg, total, estado)
+    SELECT COALESCE(MAX(id), 0) + 1, ${data.cliente_nombre}, ${data.cantidad_kg}, ${data.total}, ${data.estado || 'Pendiente'}
+    FROM ventas
+  `;
   revalidatePath("/ventas")
 }
 
