@@ -8,6 +8,7 @@ import {
   getVentas,
   getVentasCount,
   getVentasStats,
+  getVentasStatsDelMes,
   deleteVenta,
 } from "@/lib/db-actions";
 import { useEffect, useState, Suspense } from "react";
@@ -43,6 +44,7 @@ type Stats = {
 function VentasContent() {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [statsDelMes, setStatsDelMes] = useState<Stats | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVenta, setSelectedVenta] = useState<Venta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,14 +62,17 @@ function VentasContent() {
 
   async function loadData(page = 1) {
     setIsLoading(true);
-    const [fetchedVentas, fetchedTotal, fetchedStats] = await Promise.all([
-      getVentas(fecha, cliente, page, pageSize),
-      getVentasCount(fecha, cliente),
-      getVentasStats(),
-    ]);
+    const [fetchedVentas, fetchedTotal, fetchedStats, fetchedStatsDelMes] =
+      await Promise.all([
+        getVentas(fecha, cliente, page, pageSize),
+        getVentasCount(fecha, cliente),
+        getVentasStats(),
+        getVentasStatsDelMes(),
+      ]);
     setVentas(fetchedVentas as Venta[]);
     setTotalVentas(fetchedTotal as number);
     setStats(fetchedStats as Stats);
+    setStatsDelMes(fetchedStatsDelMes as Stats);
     setIsLoading(false);
   }
 
@@ -125,24 +130,35 @@ function VentasContent() {
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <p className="text-sm text-gray-600">Total Ventas</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{stats?.total_ventas ?? 0}</p>
+            <p className="text-sm text-gray-600">Total de Ventas</p>
+            <p className="mt-2 text-3xl font-bold text-gray-900">
+              {stats?.total_ventas ?? 0}
+            </p>
+            <p className="mt-1 text-xs text-gray-500">Histórico completo</p>
           </div>
           <div className="rounded-lg border bg-green-50 p-6 shadow-sm">
             <p className="text-sm text-gray-600">Ingresos Totales</p>
             <p className="mt-2 text-3xl font-bold text-gray-900">
               ${(stats?.ingresos_totales ?? 0).toLocaleString()}
             </p>
+            <p className="mt-1 text-xs text-gray-500">Histórico completo</p>
           </div>
-          <div className="rounded-lg border bg-yellow-50 p-6 shadow-sm">
-            <p className="text-sm text-gray-600">Promedio por Venta</p>
+          <div className="rounded-lg border bg-blue-50 p-6 shadow-sm">
+            <p className="text-sm text-gray-600">Ventas Este Mes</p>
             <p className="mt-2 text-3xl font-bold text-gray-900">
-              ${Math.round(stats?.promedio_venta ?? 0)}
+              {statsDelMes?.total_ventas ?? 0}
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              ${(statsDelMes?.ingresos_totales ?? 0).toLocaleString()} en
+              ingresos
             </p>
           </div>
-          <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <p className="text-sm text-gray-600">Clientes Únicos</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{stats?.clientes_unicos ?? 0}</p>
+          <div className="rounded-lg border bg-purple-50 p-6 shadow-sm">
+            <p className="text-sm text-gray-600">Clientes Este Mes</p>
+            <p className="mt-2 text-3xl font-bold text-gray-900">
+              {statsDelMes?.clientes_unicos ?? 0}
+            </p>
+            <p className="mt-1 text-xs text-gray-500">Clientes únicos</p>
           </div>
         </div>
 
@@ -239,12 +255,14 @@ function VentasContent() {
                           ${venta.total}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            venta.estado === 'Pagado'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {venta.estado || 'Pendiente'}
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              venta.estado === "Pagado"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {venta.estado || "Pendiente"}
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
@@ -308,12 +326,14 @@ function VentasContent() {
                       </span>
                     </div>
                     <div className="mt-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        venta.estado === 'Pagado'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {venta.estado || 'Pendiente'}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          venta.estado === "Pagado"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {venta.estado || "Pendiente"}
                       </span>
                     </div>
                     <div className="mt-4 flex gap-2">
@@ -362,7 +382,9 @@ function VentasContent() {
             <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
               <div className="flex flex-1 justify-between sm:hidden">
                 <Button
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                   variant="outline"
                 >
@@ -460,7 +482,13 @@ function VentasContent() {
 
 export default function VentasPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Cargando...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          Cargando...
+        </div>
+      }
+    >
       <VentasContent />
     </Suspense>
   );
