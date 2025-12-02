@@ -498,6 +498,18 @@ export async function getVentasStats() {
       COALESCE(AVG(total), 0) as promedio_venta,
       COUNT(DISTINCT cliente_nombre) as clientes_unicos
     FROM ventas
+  `
+  return stats[0]
+}
+
+export async function getVentasStatsDelMes() {
+  const stats = await sql`
+    SELECT 
+      COUNT(*) as total_ventas,
+      COALESCE(SUM(total), 0) as ingresos_totales,
+      COALESCE(AVG(total), 0) as promedio_venta,
+      COUNT(DISTINCT cliente_nombre) as clientes_unicos
+    FROM ventas
     WHERE fecha >= DATE_TRUNC('month', CURRENT_DATE)
   `
   return stats[0]
