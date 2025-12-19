@@ -3,14 +3,16 @@
 import { JaulaFormModal } from "@/components/jaula-form";
 import { Button } from "@/components/ui/button";
 import { getJaulas, deleteJaula, getGalpones } from "@/lib/db-actions";
+import { formatDateForDisplay } from "@/lib/date-utils";
 import { Suspense, useEffect, useState } from "react";
 import { NavHeader } from "@/components/nav-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Empty, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 
 type Jaula = {
-  id: number;
+  id: string;
   numero: string;
-  galpon_id: number;
+  galpon_id: string;
   galpon_nombre: string;
   capacidad_maxima: number;
   total_aves: number;
@@ -19,7 +21,7 @@ type Jaula = {
 };
 
 type Galpon = {
-  id: number;
+  id: string;
   nombre: string;
 };
 
@@ -56,9 +58,11 @@ function JaulasContent() {
     loadData();
   };
 
-  const handleDelete = async (id: number) => {
-    await deleteJaula(id);
-    loadData();
+  const handleDelete = async (id: string) => {
+    if (confirm("¿Estás seguro de que deseas eliminar esta jaula?")) {
+      await deleteJaula(id);
+      loadData();
+    }
   };
 
   return (
@@ -68,7 +72,9 @@ function JaulasContent() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Gestión de Jaulas</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Gestión de Jaulas
+            </h1>
             <p className="mt-1 text-sm text-gray-600">
               Administra las jaulas de cada galpón.
             </p>
@@ -82,48 +88,185 @@ function JaulasContent() {
         </div>
 
         <div className="mt-6 overflow-hidden rounded-lg border bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-orange-100">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Número</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Galpón</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Capacidad</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Estado</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {isLoading
-                ? Array.from({ length: 5 }).map((_, index) => (
-                    <tr key={index}>
-                      <td className="whitespace-nowrap px-6 py-4"><Skeleton className="h-4 w-24" /></td>
-                      <td className="whitespace-nowrap px-6 py-4"><Skeleton className="h-4 w-20" /></td>
-                      <td className="whitespace-nowrap px-6 py-4"><Skeleton className="h-4 w-20" /></td>
-                      <td className="whitespace-nowrap px-6 py-4"><Skeleton className="h-4 w-16" /></td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex gap-2">
-                          <Skeleton className="h-8 w-16" />
-                          <Skeleton className="h-8 w-16" />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                : jaulas.map((jaula) => (
-                    <tr key={jaula.id}>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{jaula.numero}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{jaula.galpon_nombre}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{jaula.total_aves} / {jaula.capacidad_maxima}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{jaula.estado}</td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleOpenModal(jaula)}>Editar</Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDelete(jaula.id)}>Eliminar</Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-            </tbody>
-          </table>
+          <div className="hidden sm:block">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-orange-100">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
+                    Número
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
+                    Galpón
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
+                    Capacidad
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {isLoading
+                  ? Array.from({ length: 5 }).map((_, index) => (
+                      <tr key={index}>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="flex gap-2">
+                            <Skeleton className="h-8 w-16" />
+                            <Skeleton className="h-8 w-16" />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  : jaulas.map((jaula) => (
+                      <tr key={jaula.id}>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                          {jaula.numero}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                          {jaula.galpon_nombre}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                          {jaula.total_aves} / {jaula.capacidad_maxima}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                              jaula.estado === "Activa"
+                                ? "bg-green-100 text-green-800"
+                                : jaula.estado === "Inactiva"
+                                ? "bg-gray-100 text-gray-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {jaula.estado}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenModal(jaula)}
+                              className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(jaula.id)}
+                              className="border-red-600 text-red-600 hover:bg-red-50"
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="sm:hidden">
+            {isLoading ? (
+              <div className="space-y-4 p-4">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div key={index} className="rounded-lg border p-4">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="mt-2 h-4 w-1/2" />
+                    <Skeleton className="mt-2 h-4 w-1/4" />
+                    <div className="mt-4 flex gap-2">
+                      <Skeleton className="h-8 w-16" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : jaulas.length > 0 ? (
+              <div className="space-y-4 p-4">
+                {jaulas.map((jaula) => (
+                  <div key={jaula.id} className="rounded-lg border p-4">
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-gray-900">
+                        Jaula {jaula.numero}
+                      </span>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                          jaula.estado === "Activa"
+                            ? "bg-green-100 text-green-800"
+                            : jaula.estado === "Inactiva"
+                            ? "bg-gray-100 text-gray-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {jaula.estado}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex justify-between">
+                      <span className="text-sm text-gray-600">
+                        Galpón: {jaula.galpon_nombre}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {jaula.total_aves} / {jaula.capacidad_maxima}
+                      </span>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenModal(jaula)}
+                        className="flex-1 border-orange-600 text-orange-600 hover:bg-orange-50"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(jaula.id)}
+                        className="flex-1 border-red-600 text-red-600 hover:bg-red-50"
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12">
+                <Empty>
+                  <EmptyTitle>No hay jaulas registradas</EmptyTitle>
+                  <EmptyDescription>
+                    Comienza a agregar jaulas para verlas aquí.
+                  </EmptyDescription>
+                </Empty>
+              </div>
+            )}
+          </div>
+          {jaulas.length === 0 && !isLoading && (
+            <div className="hidden py-12 sm:block">
+              <Empty>
+                <EmptyTitle>No hay jaulas registradas</EmptyTitle>
+                <EmptyDescription>
+                  Comienza a agregar jaulas para verlas aquí.
+                </EmptyDescription>
+              </Empty>
+            </div>
+          )}
         </div>
       </main>
 
@@ -139,7 +282,13 @@ function JaulasContent() {
 
 export default function JaulasPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Cargando...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          Cargando...
+        </div>
+      }
+    >
       <JaulasContent />
     </Suspense>
   );

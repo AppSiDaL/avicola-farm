@@ -17,20 +17,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createAve, updateAve } from "@/lib/db-actions";
+import { getLocalDateString, formatDateForInput } from "@/lib/date-utils";
 import { useEffect, useState } from "react";
 
 type Ave = {
-  id?: number;
+  id?: string;
   fecha_ingreso: string;
   raza: string;
-  jaula_id: number | null;
+  jaula_id: string | null;
   estado: string;
   peso?: number | null;
   edad?: number | null;
 };
 
 type Jaula = {
-  id: number;
+  id: string;
   numero: string;
 };
 
@@ -47,7 +48,7 @@ export function AveFormModal({
 }) {
   const [formData, setFormData] = useState<Ave>(
     ave || {
-      fecha_ingreso: new Date().toISOString().split("T")[0],
+      fecha_ingreso: getLocalDateString(),
       raza: "Rhode Island Red",
       jaula_id: null,
       estado: "Activa",
@@ -55,39 +56,57 @@ export function AveFormModal({
       edad: undefined,
     }
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (ave) {
-      setFormData({
-        ...ave,
-        fecha_ingreso: new Date(ave.fecha_ingreso).toISOString().split("T")[0],
-      });
-    } else {
-      setFormData({
-        fecha_ingreso: new Date().toISOString().split("T")[0],
-        raza: "Rhode Island Red",
-        jaula_id: null,
-        estado: "Activa",
-        peso: undefined,
-        edad: undefined,
-      });
+    if (isOpen) {
+      setError("");
+      if (ave) {
+        setFormData({
+          ...ave,
+          fecha_ingreso: formatDateForInput(ave.fecha_ingreso),
+        });
+      } else {
+        setFormData({
+          fecha_ingreso: getLocalDateString(),
+          raza: "Rhode Island Red",
+          jaula_id: null,
+          estado: "Activa",
+          peso: undefined,
+          edad: undefined,
+        });
+      }
     }
-  }, [ave]);
+  }, [ave, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const dataToSubmit = {
-      ...formData,
-      peso: formData.peso || undefined,
-      edad: formData.edad || undefined,
-      jaula_id: formData.jaula_id ? Number(formData.jaula_id) : null,
-    };
-    if (ave?.id) {
-      await updateAve(ave.id, dataToSubmit);
-    } else {
-      await createAve(dataToSubmit);
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const dataToSubmit = {
+        ...formData,
+        peso: formData.peso || undefined,
+        edad: formData.edad || undefined,
+        jaula_id:
+          formData.jaula_id && formData.jaula_id !== "null"
+            ? formData.jaula_id
+            : null,
+      };
+      if (ave?.id) {
+        await updateAve(ave.id, dataToSubmit);
+      } else {
+        await createAve(dataToSubmit);
+      }
+      onClose();
+    } catch (err) {
+      setError("Error al guardar el ave. Por favor intenta de nuevo.");
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
   const handleChange = (
@@ -96,7 +115,7 @@ export function AveFormModal({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  
+
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -110,6 +129,11 @@ export function AveFormModal({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
+              {error}
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="fecha_ingreso">Fecha de Ingreso *</Label>
@@ -148,10 +172,8 @@ export function AveFormModal({
               <Label htmlFor="jaula_id">Jaula</Label>
               <Select
                 name="jaula_id"
-                value={String(formData.jaula_id)}
-                onValueChange={(value) =>
-                  handleSelectChange("jaula_id", value)
-                }
+                value={formData.jaula_id || "null"}
+                onValueChange={(value) => handleSelectChange("jaula_id", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar jaula" />
@@ -159,7 +181,7 @@ export function AveFormModal({
                 <SelectContent>
                   <SelectItem value="null">Sin asignar</SelectItem>
                   {jaulas.map((jaula) => (
-                    <SelectItem key={jaula.id} value={String(jaula.id)}>
+                    <SelectItem key={jaula.id} value={jaula.id}>
                       {jaula.numero}
                     </SelectItem>
                   ))}
@@ -214,14 +236,20 @@ export function AveFormModal({
               variant="outline"
               onClick={onClose}
               className="w-full sm:w-auto"
+              disabled={isSubmitting}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               className="w-full bg-teal-800 text-white hover:bg-teal-900 sm:w-auto"
+              disabled={isSubmitting}
             >
-              {ave ? "Guardar Cambios" : "Crear Ave"}
+              {isSubmitting
+                ? "Guardando..."
+                : ave
+                ? "Guardar Cambios"
+                : "Crear Ave"}
             </Button>
           </div>
         </form>

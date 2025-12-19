@@ -2,15 +2,8 @@
 
 import { AveFormModal } from "@/components/ave-form";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { getAves, getAvesStats, deleteAve, getJaulas } from "@/lib/db-actions";
+import { formatDateForDisplay } from "@/lib/date-utils";
 import { useEffect, useState } from "react";
 import { NavHeader } from "@/components/nav-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,15 +14,14 @@ import {
   PaginationItem,
   PaginationPrevious,
   PaginationLink,
-  PaginationEllipsis,
   PaginationNext,
 } from "@/components/ui/pagination";
 
 type Ave = {
-  id: number;
+  id: string;
   fecha_ingreso: string;
   raza: string;
-  jaula_id: number | null;
+  jaula_id: string | null;
   jaula_numero: string | null;
   estado: "Activa" | "Enferma";
   peso: number | null;
@@ -37,7 +29,7 @@ type Ave = {
 };
 
 type Jaula = {
-  id: number;
+  id: string;
   numero: string;
 };
 
@@ -88,9 +80,11 @@ export default function AvesPage() {
     loadData(currentPage);
   };
 
-  const handleDelete = async (id: number) => {
-    await deleteAve(id);
-    loadData(currentPage);
+  const handleDelete = async (id: string) => {
+    if (confirm("¿Estás seguro de que deseas eliminar esta ave?")) {
+      await deleteAve(id);
+      loadData(currentPage);
+    }
   };
 
   return (
@@ -203,7 +197,7 @@ export default function AvesPage() {
                   : aves.map((ave) => (
                       <tr key={ave.id}>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                          {new Date(ave.fecha_ingreso).toLocaleDateString()}
+                          {formatDateForDisplay(ave.fecha_ingreso)}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                           {ave.raza}
@@ -288,8 +282,7 @@ export default function AvesPage() {
                     </div>
                     <div className="mt-2 flex justify-between">
                       <span className="text-sm text-gray-600">
-                        Ingreso:{" "}
-                        {new Date(ave.fecha_ingreso).toLocaleDateString()}
+                        Ingreso: {formatDateForDisplay(ave.fecha_ingreso)}
                       </span>
                       <span className="text-sm text-gray-600">
                         Jaula: {ave.jaula_numero || "N/A"}
@@ -349,7 +342,9 @@ export default function AvesPage() {
             <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
               <div className="flex flex-1 justify-between sm:hidden">
                 <Button
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                   variant="outline"
                 >

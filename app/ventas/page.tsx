@@ -11,6 +11,7 @@ import {
   getVentasStatsDelMes,
   deleteVenta,
 } from "@/lib/db-actions";
+import { formatDateForDisplay } from "@/lib/date-utils";
 import { useEffect, useState, Suspense } from "react";
 import { NavHeader } from "@/components/nav-header";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/pagination";
 
 type Venta = {
-  id: number;
+  id: string;
   fecha: string;
   cliente_nombre: string;
   cantidad_kg: number;
@@ -91,9 +92,11 @@ function VentasContent() {
     loadData(currentPage);
   };
 
-  const handleDelete = async (id: number) => {
-    await deleteVenta(id);
-    loadData(currentPage);
+  const handleDelete = async (id: string) => {
+    if (confirm("¿Estás seguro de que deseas eliminar esta venta?")) {
+      await deleteVenta(id);
+      loadData(currentPage);
+    }
   };
 
   const handleFilterChange = (type: "fecha" | "cliente", value: string) => {
@@ -103,6 +106,7 @@ function VentasContent() {
     } else {
       params.delete(type);
     }
+    setCurrentPage(1);
     router.push(`?${params.toString()}`);
   };
 
@@ -241,7 +245,7 @@ function VentasContent() {
                   : ventas.map((venta) => (
                       <tr key={venta.id}>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                          {new Date(venta.fecha).toLocaleDateString()}
+                          {formatDateForDisplay(venta.fecha)}
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <div className="font-medium text-gray-900">
@@ -314,7 +318,7 @@ function VentasContent() {
                         {venta.cliente_nombre}
                       </span>
                       <span className="text-sm text-gray-600">
-                        {new Date(venta.fecha).toLocaleDateString()}
+                        {formatDateForDisplay(venta.fecha)}
                       </span>
                     </div>
                     <div className="mt-2 flex justify-between">

@@ -1,4 +1,6 @@
--- Limpiar datos existentes para evitar duplicados
+-- Seed data para tablas con UUID
+-- Nota: Los UUIDs se generan automáticamente, usamos CTEs para mantener las referencias
+-- Limpiar datos existentes
 DELETE FROM
     registros_postura;
 
@@ -17,25 +19,73 @@ DELETE FROM
 DELETE FROM
     galpones;
 
--- Insertar los nuevos galpones
+-- Insertar galpones y guardar sus IDs en una tabla temporal
+DO $ $ DECLARE galpon_a_id UUID;
+
+galpon_b_id UUID;
+
+galpon_c_id UUID;
+
+galpon_d_id UUID;
+
+jaula_1_id UUID;
+
+jaula_2_id UUID;
+
+jaula_3_id UUID;
+
+jaula_4_id UUID;
+
+jaula_5_id UUID;
+
+jaula_6_id UUID;
+
+jaula_7_id UUID;
+
+BEGIN -- Insertar galpones
 INSERT INTO
     galpones (
-        id,
         nombre,
         capacidad_maxima,
         estado,
         fecha_instalacion
     )
 VALUES
-    (1, 'Galpón A', 100, 'Activo', '2025-11-22'),
-    (2, 'Galpón B', 150, 'Activo', '2025-11-22'),
-    (3, 'Galpón C', 120, 'Activo', '2025-11-22'),
-    (4, 'Galpón D', 200, 'Activo', '2025-11-22');
+    ('Galpón A', 100, 'Activo', '2025-11-22') RETURNING id INTO galpon_a_id;
 
--- Insertar las nuevas jaulas
+INSERT INTO
+    galpones (
+        nombre,
+        capacidad_maxima,
+        estado,
+        fecha_instalacion
+    )
+VALUES
+    ('Galpón B', 150, 'Activo', '2025-11-22') RETURNING id INTO galpon_b_id;
+
+INSERT INTO
+    galpones (
+        nombre,
+        capacidad_maxima,
+        estado,
+        fecha_instalacion
+    )
+VALUES
+    ('Galpón C', 120, 'Activo', '2025-11-22') RETURNING id INTO galpon_c_id;
+
+INSERT INTO
+    galpones (
+        nombre,
+        capacidad_maxima,
+        estado,
+        fecha_instalacion
+    )
+VALUES
+    ('Galpón D', 200, 'Activo', '2025-11-22') RETURNING id INTO galpon_d_id;
+
+-- Insertar jaulas en Galpón A
 INSERT INTO
     jaulas (
-        id,
         numero,
         galpon_id,
         capacidad_maxima,
@@ -43,16 +93,120 @@ INSERT INTO
         fecha_instalacion
     )
 VALUES
-    (1, 'Jaula 1', 1, 24, 'Activa', '2025-11-22'),
-    (2, 'Jaula 2', 1, 9, 'Activa', '2025-11-22'),
-    (3, 'Jaula 3', 2, 18, 'Activa', '2025-11-22'),
-    (4, 'Jaula 4', 2, 30, 'Activa', '2025-11-22'),
-    (5, 'Jaula 5', 3, 15, 'Activa', '2025-11-22'),
-    (6, 'Jaula 6', 3, 13, 'Activa', '2025-11-22'),
-    (7, 'Jaula 7', 4, 40, 'Activa', '2025-11-22');
+    (
+        'Jaula 1',
+        galpon_a_id,
+        24,
+        'Activa',
+        '2025-11-22'
+    ) RETURNING id INTO jaula_1_id;
 
--- Insertar las aves
--- Jaula 1: 10 Leghorn Blanca
+INSERT INTO
+    jaulas (
+        numero,
+        galpon_id,
+        capacidad_maxima,
+        estado,
+        fecha_instalacion
+    )
+VALUES
+    (
+        'Jaula 2',
+        galpon_a_id,
+        9,
+        'Activa',
+        '2025-11-22'
+    ) RETURNING id INTO jaula_2_id;
+
+-- Insertar jaulas en Galpón B
+INSERT INTO
+    jaulas (
+        numero,
+        galpon_id,
+        capacidad_maxima,
+        estado,
+        fecha_instalacion
+    )
+VALUES
+    (
+        'Jaula 3',
+        galpon_b_id,
+        18,
+        'Activa',
+        '2025-11-22'
+    ) RETURNING id INTO jaula_3_id;
+
+INSERT INTO
+    jaulas (
+        numero,
+        galpon_id,
+        capacidad_maxima,
+        estado,
+        fecha_instalacion
+    )
+VALUES
+    (
+        'Jaula 4',
+        galpon_b_id,
+        30,
+        'Activa',
+        '2025-11-22'
+    ) RETURNING id INTO jaula_4_id;
+
+-- Insertar jaulas en Galpón C
+INSERT INTO
+    jaulas (
+        numero,
+        galpon_id,
+        capacidad_maxima,
+        estado,
+        fecha_instalacion
+    )
+VALUES
+    (
+        'Jaula 5',
+        galpon_c_id,
+        15,
+        'Activa',
+        '2025-11-22'
+    ) RETURNING id INTO jaula_5_id;
+
+INSERT INTO
+    jaulas (
+        numero,
+        galpon_id,
+        capacidad_maxima,
+        estado,
+        fecha_instalacion
+    )
+VALUES
+    (
+        'Jaula 6',
+        galpon_c_id,
+        13,
+        'Activa',
+        '2025-11-22'
+    ) RETURNING id INTO jaula_6_id;
+
+-- Insertar jaulas en Galpón D
+INSERT INTO
+    jaulas (
+        numero,
+        galpon_id,
+        capacidad_maxima,
+        estado,
+        fecha_instalacion
+    )
+VALUES
+    (
+        'Jaula 7',
+        galpon_d_id,
+        40,
+        'Activa',
+        '2025-11-22'
+    ) RETURNING id INTO jaula_7_id;
+
+-- Insertar aves en Jaula 1: 10 Leghorn Blanca
 INSERT INTO
     aves (
         fecha_ingreso,
@@ -65,14 +219,14 @@ INSERT INTO
 SELECT
     '2025-11-22',
     'Leghorn Blanca',
-    1,
+    jaula_1_id,
     'Activa',
     1.50,
     24
 FROM
     generate_series(1, 10);
 
--- Jaula 2: 9 Rhode Island Red
+-- Insertar aves en Jaula 2: 9 Rhode Island Red
 INSERT INTO
     aves (
         fecha_ingreso,
@@ -85,14 +239,14 @@ INSERT INTO
 SELECT
     '2025-11-22',
     'Rhode Island Red',
-    2,
+    jaula_2_id,
     'Activa',
     1.50,
     24
 FROM
     generate_series(1, 9);
 
--- Jaula 3: 12 Avada, 6 Rhode Island Red
+-- Insertar aves en Jaula 3: 12 Avada, 6 Rhode Island Red
 INSERT INTO
     aves (
         fecha_ingreso,
@@ -105,7 +259,7 @@ INSERT INTO
 SELECT
     '2025-11-22',
     'Avada',
-    3,
+    jaula_3_id,
     'Activa',
     1.50,
     24
@@ -124,14 +278,14 @@ INSERT INTO
 SELECT
     '2025-11-22',
     'Rhode Island Red',
-    3,
+    jaula_3_id,
     'Activa',
     1.50,
     24
 FROM
     generate_series(1, 6);
 
--- Jaula 4: 30 Colorada
+-- Insertar aves en Jaula 4: 30 Colorada
 INSERT INTO
     aves (
         fecha_ingreso,
@@ -144,14 +298,14 @@ INSERT INTO
 SELECT
     '2025-11-22',
     'Colorada',
-    4,
+    jaula_4_id,
     'Activa',
     1.50,
     24
 FROM
     generate_series(1, 30);
 
--- Jaula 5: 15 Rhode Island Red
+-- Insertar aves en Jaula 5: 15 Rhode Island Red
 INSERT INTO
     aves (
         fecha_ingreso,
@@ -164,14 +318,14 @@ INSERT INTO
 SELECT
     '2025-11-22',
     'Rhode Island Red',
-    5,
+    jaula_5_id,
     'Activa',
     1.50,
     24
 FROM
     generate_series(1, 15);
 
--- Jaula 6: 13 Rhode Island Red
+-- Insertar aves en Jaula 6: 13 Rhode Island Red
 INSERT INTO
     aves (
         fecha_ingreso,
@@ -184,14 +338,14 @@ INSERT INTO
 SELECT
     '2025-11-22',
     'Rhode Island Red',
-    6,
+    jaula_6_id,
     'Activa',
     1.50,
     24
 FROM
     generate_series(1, 13);
 
--- Jaula 7: 6 Gris, 13 Rhode Island Red
+-- Insertar aves en Jaula 7: 6 Gris, 13 Rhode Island Red
 INSERT INTO
     aves (
         fecha_ingreso,
@@ -204,7 +358,7 @@ INSERT INTO
 SELECT
     '2025-11-22',
     'Gris',
-    7,
+    jaula_7_id,
     'Activa',
     1.50,
     24
@@ -223,26 +377,20 @@ INSERT INTO
 SELECT
     '2025-11-22',
     'Rhode Island Red',
-    7,
+    jaula_7_id,
     'Activa',
     1.50,
     24
 FROM
     generate_series(1, 13);
 
--- Insertar los gastos
+END $ $;
+
+-- Insertar gastos (sin referencias a otras tablas, UUID se genera automáticamente)
 INSERT INTO
-    gastos (
-        id,
-        fecha,
-        categoria,
-        descripcion,
-        cantidad,
-        monto
-    )
+    gastos (fecha, categoria, descripcion, cantidad, monto)
 VALUES
     (
-        2,
         '2025-11-25',
         'Alimento',
         'Salvado Trimex 25kg',
@@ -250,7 +398,6 @@ VALUES
         128.00
     ),
     (
-        3,
         '2025-11-25',
         'Alimento',
         'Pasta de Soya 40kg',
@@ -258,7 +405,6 @@ VALUES
         390.00
     ),
     (
-        4,
         '2025-11-25',
         'Alimento',
         'Maiz Molido 40kg',
@@ -266,10 +412,9 @@ VALUES
         735.00
     );
 
--- Insertar las ventas
+-- Insertar ventas (sin referencias a otras tablas, UUID se genera automáticamente)
 INSERT INTO
     ventas (
-        id,
         fecha,
         cliente_nombre,
         cantidad_kg,
@@ -278,24 +423,15 @@ INSERT INTO
     )
 VALUES
     (
-        1,
         '2025-11-26',
         'Tio Chato',
         2.00,
         100.00,
         'Pagado'
     ),
+    ('2025-11-22', 'Tia Naye', 1.50, 75.00, 'Pagado'),
+    ('2025-11-22', 'Caja', 10.50, 525.00, 'Pagado'),
     (
-        2,
-        '2025-11-22',
-        'Tia Naye',
-        1.50,
-        75.00,
-        'Pagado'
-    ),
-    (3, '2025-11-22', 'Caja', 10.50, 525.00, 'Pagado'),
-    (
-        4,
         '2025-11-24',
         'Tia Chilito',
         3.00,
@@ -303,40 +439,23 @@ VALUES
         'Pagado'
     ),
     (
-        5,
         '2025-11-24',
         'Juana Gomez',
         1.00,
         50.00,
         'Pagado'
     ),
+    ('2025-11-24', 'Doña Cruz', 1.00, 50.00, 'Pagado'),
+    ('2025-11-24', 'Doña Mago', 1.00, 50.00, 'Pagado'),
     (
-        6,
-        '2025-11-24',
-        'Doña Cruz',
-        1.00,
-        50.00,
-        'Pagado'
-    ),
-    (
-        7,
-        '2025-11-24',
-        'Doña Mago',
-        1.00,
-        50.00,
-        'Pagado'
-    ),
-    (
-        8,
         '2025-11-24',
         'Doña Mago',
         1.00,
         50.00,
         'Pendiente'
     ),
-    (9, '2025-11-25', 'Leñero', 1.00, 50.00, 'Pagado'),
+    ('2025-11-25', 'Leñero', 1.00, 50.00, 'Pagado'),
     (
-        10,
         '2025-11-25',
         'Maestra Diana',
         2.00,
@@ -344,7 +463,6 @@ VALUES
         'Pagado'
     ),
     (
-        11,
         '2025-11-25',
         'Fer Amigo beny',
         2.00,
@@ -352,18 +470,10 @@ VALUES
         'Pagado'
     ),
     (
-        12,
         '2025-11-26',
         'Juana Gomez',
         1.00,
         50.00,
         'Pagado'
     ),
-    (
-        13,
-        '2025-11-26',
-        'Judith',
-        1.00,
-        50.00,
-        'Pagado'
-    );
+    ('2025-11-26', 'Judith', 1.00, 50.00, 'Pagado');

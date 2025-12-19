@@ -55,6 +55,12 @@ export function NavHeader() {
             >
               Gastos
             </Link>
+            <Link
+              href="/balance"
+              className="text-sm font-medium text-teal-700 hover:text-teal-900"
+            >
+              📊 Balance
+            </Link>
           </div>
           <div className="md:hidden">
             <button
@@ -136,6 +142,12 @@ export function NavHeader() {
               className="block rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900"
             >
               Gastos
+            </Link>
+            <Link
+              href="/balance"
+              className="block rounded-md px-3 py-2 text-base font-medium text-teal-700 hover:bg-teal-50 hover:text-teal-900"
+            >
+              📊 Balance
             </Link>
           </div>
         </div>

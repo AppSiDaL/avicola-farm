@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -19,15 +20,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createGasto, updateGasto } from "@/lib/db-actions";
+import { getLocalDateString, formatDateForInput } from "@/lib/date-utils";
 
 type Gasto = {
-  id: number;
+  id: string;
   fecha: string;
   categoria: "Alimento" | "Medicinas" | "Servicios" | "Equipos" | "Otros";
   descripcion: string;
   cantidad: number;
   monto: number;
   notas?: string | null;
+  incluir_en_balance?: boolean;
 };
 
 interface GastoFormModalProps {
@@ -37,12 +40,13 @@ interface GastoFormModalProps {
 }
 
 const initialFormData = {
-  fecha: new Date().toISOString().split("T")[0],
+  fecha: getLocalDateString(),
   categoria: "Alimento",
   descripcion: "",
   cantidad: "1",
   monto: "",
   notas: "",
+  incluir_en_balance: true,
 };
 
 export function GastoFormModal({
@@ -59,15 +63,19 @@ export function GastoFormModal({
     if (isOpen) {
       if (gasto) {
         setFormData({
-          fecha: gasto.fecha,
+          fecha: formatDateForInput(gasto.fecha),
           categoria: gasto.categoria,
           descripcion: gasto.descripcion,
           cantidad: String(gasto.cantidad),
           monto: String(gasto.monto),
           notas: gasto.notas || "",
+          incluir_en_balance: gasto.incluir_en_balance ?? true,
         });
       } else {
-        setFormData(initialFormData);
+        setFormData({
+          ...initialFormData,
+          fecha: getLocalDateString(),
+        });
       }
       setError("");
     }
@@ -81,19 +89,19 @@ export function GastoFormModal({
     try {
       const cantidad = parseFloat(formData.cantidad);
       const monto = parseFloat(formData.monto);
-      
+
       if (!formData.descripcion.trim()) {
         setError("La descripción es requerida");
         setIsSubmitting(false);
         return;
       }
-      
+
       if (isNaN(cantidad) || cantidad <= 0) {
         setError("La cantidad debe ser un número positivo");
         setIsSubmitting(false);
         return;
       }
-      
+
       if (isNaN(monto) || monto <= 0) {
         setError("El monto debe ser un número positivo");
         setIsSubmitting(false);
@@ -102,11 +110,17 @@ export function GastoFormModal({
 
       const data = {
         fecha: formData.fecha,
-        categoria: formData.categoria as "Alimento" | "Medicinas" | "Servicios" | "Equipos" | "Otros",
+        categoria: formData.categoria as
+          | "Alimento"
+          | "Medicinas"
+          | "Servicios"
+          | "Equipos"
+          | "Otros",
         descripcion: formData.descripcion.trim(),
         cantidad: cantidad,
         monto: monto,
         notas: formData.notas.trim() || undefined,
+        incluir_en_balance: formData.incluir_en_balance,
       };
 
       if (gasto) {
@@ -147,9 +161,7 @@ export function GastoFormModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {gasto ? "Editar Gasto" : "Nuevo Gasto"}
-          </DialogTitle>
+          <DialogTitle>{gasto ? "Editar Gasto" : "Nuevo Gasto"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -203,31 +215,33 @@ export function GastoFormModal({
             />
           </div>
 
-          <div>
-            <Label htmlFor="cantidad">Cantidad</Label>
-            <Input
-              id="cantidad"
-              name="cantidad"
-              type="number"
-              placeholder="1"
-              value={formData.cantidad}
-              onChange={handleChange}
-              required
-            />
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="cantidad">Cantidad</Label>
+              <Input
+                id="cantidad"
+                name="cantidad"
+                type="number"
+                placeholder="1"
+                value={formData.cantidad}
+                onChange={handleChange}
+                required
+              />
+            </div>
 
-          <div>
-            <Label htmlFor="monto">Monto ($)</Label>
-            <Input
-              id="monto"
-              name="monto"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={formData.monto}
-              onChange={handleChange}
-              required
-            />
+            <div>
+              <Label htmlFor="monto">Monto ($)</Label>
+              <Input
+                id="monto"
+                name="monto"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={formData.monto}
+                onChange={handleChange}
+                required
+              />
+            </div>
           </div>
 
           <div>
@@ -238,8 +252,32 @@ export function GastoFormModal({
               placeholder="Agregar notas adicionales..."
               value={formData.notas}
               onChange={handleChange}
-              rows={3}
+              rows={2}
             />
+          </div>
+
+          <div className="flex items-center space-x-2 rounded-lg border bg-gray-50 p-3">
+            <Checkbox
+              id="incluir_en_balance"
+              checked={formData.incluir_en_balance}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  incluir_en_balance: checked === true,
+                }))
+              }
+            />
+            <div className="flex flex-col">
+              <Label
+                htmlFor="incluir_en_balance"
+                className="text-sm font-medium cursor-pointer"
+              >
+                Incluir en balance
+              </Label>
+              <span className="text-xs text-gray-500">
+                Desactiva para gastos personales o no operativos
+              </span>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">

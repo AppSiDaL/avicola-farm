@@ -17,6 +17,7 @@ import {
   getGastosStats,
   deleteGasto,
 } from "@/lib/db-actions";
+import { formatDateForDisplay } from "@/lib/date-utils";
 import { useEffect, useState, Suspense } from "react";
 import { NavHeader } from "@/components/nav-header";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -32,13 +33,14 @@ import {
 } from "@/components/ui/pagination";
 
 type Gasto = {
-  id: number;
+  id: string;
   fecha: string;
   categoria: "Alimento" | "Medicinas" | "Servicios" | "Equipos" | "Otros";
   descripcion: string;
   cantidad: number;
   monto: number;
   notas?: string | null;
+  incluir_en_balance?: boolean;
 };
 
 type Stats = {
@@ -49,11 +51,11 @@ type Stats = {
 };
 
 const categoriaColors: Record<Gasto["categoria"], string> = {
-  "Alimento": "bg-amber-100 text-amber-800",
-  "Medicinas": "bg-red-100 text-red-800",
-  "Servicios": "bg-blue-100 text-blue-800",
-  "Equipos": "bg-purple-100 text-purple-800",
-  "Otros": "bg-gray-100 text-gray-800",
+  Alimento: "bg-amber-100 text-amber-800",
+  Medicinas: "bg-red-100 text-red-800",
+  Servicios: "bg-blue-100 text-blue-800",
+  Equipos: "bg-purple-100 text-purple-800",
+  Otros: "bg-gray-100 text-gray-800",
 };
 
 function GastosContent() {
@@ -107,7 +109,7 @@ function GastosContent() {
     loadData(currentPage);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (confirm("¿Estás seguro de que deseas eliminar este gasto?")) {
       await deleteGasto(id);
       loadData(currentPage);
@@ -157,7 +159,11 @@ function GastosContent() {
           <div className="rounded-lg border bg-red-50 p-6 shadow-sm">
             <p className="text-sm text-gray-600">Monto Total</p>
             <p className="mt-2 text-3xl font-bold text-red-700">
-              ${(stats?.monto_total ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              $
+              {(stats?.monto_total ?? 0).toLocaleString("es-ES", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
           </div>
           <div className="rounded-lg border bg-orange-50 p-6 shadow-sm">
@@ -270,7 +276,7 @@ function GastosContent() {
                   : gastos.map((gasto) => (
                       <tr key={gasto.id}>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                          {new Date(gasto.fecha).toLocaleDateString()}
+                          {formatDateForDisplay(gasto.fecha)}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <span
@@ -285,12 +291,24 @@ function GastosContent() {
                           <div className="font-medium text-gray-900">
                             {gasto.descripcion}
                           </div>
+                          {gasto.incluir_en_balance === false && (
+                            <span className="inline-flex items-center gap-1 text-xs text-orange-600">
+                              ⚠️ No incluido en balance
+                            </span>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                          {gasto.cantidad.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {gasto.cantidad.toLocaleString("es-ES", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-red-600">
-                          ${gasto.monto.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          $
+                          {gasto.monto.toLocaleString("es-ES", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                           {gasto.notas || "-"}
@@ -353,16 +371,24 @@ function GastosContent() {
                     </div>
                     <div className="mt-2 flex justify-between">
                       <span className="text-sm text-gray-600">
-                        {new Date(gasto.fecha).toLocaleDateString()}
+                        {formatDateForDisplay(gasto.fecha)}
                       </span>
                       <span className="text-sm text-gray-600">
-                        Cantidad: {gasto.cantidad.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        Cantidad:{" "}
+                        {gasto.cantidad.toLocaleString("es-ES", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     </div>
                     <div className="mt-2 flex justify-between">
                       <span className="text-sm text-gray-600">Monto:</span>
                       <span className="font-semibold text-red-600">
-                        ${gasto.monto.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        $
+                        {gasto.monto.toLocaleString("es-ES", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     </div>
                     {gasto.notas && (
@@ -416,7 +442,9 @@ function GastosContent() {
             <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
               <div className="flex flex-1 justify-between sm:hidden">
                 <Button
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                   variant="outline"
                 >

@@ -19,6 +19,7 @@ import {
   getGalpones,
   getJaulas,
 } from "@/lib/db-actions";
+import { formatDateForDisplay } from "@/lib/date-utils";
 import { Suspense, useEffect, useState } from "react";
 import { NavHeader } from "@/components/nav-header";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -34,25 +35,27 @@ import {
 } from "@/components/ui/pagination";
 
 type RegistroPostura = {
-  id: number;
+  id: string;
   fecha: string;
   huevos_recolectados: number;
   huevos_rotos: number;
   notas?: string | null;
+  jaula_id?: string | null;
+  galpon_id?: string | null;
   jaula_numero?: string;
   galpon_nombre?: string;
 };
 
 type Galpon = {
-  id: number;
+  id: string;
   nombre: string;
 };
 
 type Jaula = {
-  id: number;
+  id: string;
   numero: string;
   galpon_nombre: string;
-}
+};
 
 type Stats = {
   total_huevos: number;
@@ -79,7 +82,8 @@ function PosturaContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const filterType = (searchParams.get("filterType") as 'galpon' | 'jaula') || "galpon";
+  const filterType =
+    (searchParams.get("filterType") as "galpon" | "jaula") || "galpon";
   const filterId = searchParams.get("filterId") || "todos";
   const fechaInicio = searchParams.get("fechaInicio") || "";
   const fechaFin = searchParams.get("fechaFin") || "";
@@ -123,9 +127,11 @@ function PosturaContent() {
     loadData(currentPage);
   };
 
-  const handleDelete = async (id: number) => {
-    await deleteRegistroPostura(id);
-    loadData(currentPage);
+  const handleDelete = async (id: string) => {
+    if (confirm("¿Estás seguro de que deseas eliminar este registro?")) {
+      await deleteRegistroPostura(id);
+      loadData(currentPage);
+    }
   };
 
   const handleFilterChange = (
@@ -133,17 +139,18 @@ function PosturaContent() {
     value: string
   ) => {
     const params = new URLSearchParams(searchParams);
-    if (type === 'filterType') {
-      params.set('filterType', value);
-      params.delete('filterId'); // Reset id when type changes
+    if (type === "filterType") {
+      params.set("filterType", value);
+      params.delete("filterId"); // Reset id when type changes
     } else if (value) {
       params.set(type, value);
     } else {
       params.delete(type);
     }
+    setCurrentPage(1);
     router.push(`?${params.toString()}`);
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       <NavHeader />
@@ -199,7 +206,9 @@ function PosturaContent() {
               <Label>Filtrar por</Label>
               <Select
                 value={filterType}
-                onValueChange={(value) => handleFilterChange("filterType", value)}
+                onValueChange={(value) =>
+                  handleFilterChange("filterType", value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -211,7 +220,7 @@ function PosturaContent() {
               </Select>
             </div>
             <div>
-              <Label>{filterType === 'galpon' ? 'Galpón' : 'Jaula'}</Label>
+              <Label>{filterType === "galpon" ? "Galpón" : "Jaula"}</Label>
               <Select
                 value={filterId}
                 onValueChange={(value) => handleFilterChange("filterId", value)}
@@ -221,16 +230,18 @@ function PosturaContent() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">
-                    {filterType === 'galpon' ? 'Todos los galpones' : 'Todas las jaulas'}
+                    {filterType === "galpon"
+                      ? "Todos los galpones"
+                      : "Todas las jaulas"}
                   </SelectItem>
-                  {filterType === 'galpon'
+                  {filterType === "galpon"
                     ? galpones.map((g) => (
-                        <SelectItem key={g.id} value={String(g.id)}>
+                        <SelectItem key={g.id} value={g.id}>
                           {g.nombre}
                         </SelectItem>
                       ))
                     : jaulas.map((j) => (
-                        <SelectItem key={j.id} value={String(j.id)}>
+                        <SelectItem key={j.id} value={j.id}>
                           {j.galpon_nombre} - {j.numero}
                         </SelectItem>
                       ))}
@@ -287,11 +298,21 @@ function PosturaContent() {
                 {isLoading
                   ? Array.from({ length: 5 }).map((_, index) => (
                       <tr key={index}>
-                        <td className="whitespace-nowrap px-6 py-4"><Skeleton className="h-4 w-24" /></td>
-                        <td className="whitespace-nowrap px-6 py-4"><Skeleton className="h-4 w-20" /></td>
-                        <td className="whitespace-nowrap px-6 py-4"><Skeleton className="h-4 w-20" /></td>
-                        <td className="whitespace-nowrap px-6 py-4"><Skeleton className="h-4 w-16" /></td>
-                        <td className="whitespace-nowrap px-6 py-4"><Skeleton className="h-4 w-24" /></td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex gap-2">
                             <Skeleton className="h-8 w-16" />
@@ -303,10 +324,12 @@ function PosturaContent() {
                   : registros.map((registro) => (
                       <tr key={registro.id}>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                          {new Date(registro.fecha).toLocaleDateString()}
+                          {formatDateForDisplay(registro.fecha)}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                          {registro.jaula_numero ? `Jaula ${registro.jaula_numero}` : `Galpón ${registro.galpon_nombre}`}
+                          {registro.jaula_numero
+                            ? `Jaula ${registro.jaula_numero}`
+                            : `Galpón ${registro.galpon_nombre}`}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                           {registro.huevos_recolectados}
@@ -315,14 +338,24 @@ function PosturaContent() {
                           {registro.huevos_rotos}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                          {registro.notas}
+                          {registro.notas || "-"}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleOpenModal(registro)} className="border-orange-600 text-orange-600 hover:bg-orange-50">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenModal(registro)}
+                              className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                            >
                               Editar
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDelete(registro.id)} className="border-red-600 text-red-600 hover:bg-red-50">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(registro.id)}
+                              className="border-red-600 text-red-600 hover:bg-red-50"
+                            >
                               Eliminar
                             </Button>
                           </div>
@@ -348,10 +381,12 @@ function PosturaContent() {
                   >
                     <div className="flex justify-between">
                       <span className="text-sm font-medium text-gray-700">
-                        {new Date(registro.fecha).toLocaleDateString()}
+                        {formatDateForDisplay(registro.fecha)}
                       </span>
                       <span className="text-sm text-gray-600">
-                        {registro.jaula_numero ? `Jaula ${registro.jaula_numero}` : `Galpón ${registro.galpon_nombre}`}
+                        {registro.jaula_numero
+                          ? `Jaula ${registro.jaula_numero}`
+                          : `Galpón ${registro.galpon_nombre}`}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -366,10 +401,20 @@ function PosturaContent() {
                       <p className="text-sm text-gray-600">{registro.notas}</p>
                     )}
                     <div className="flex justify-end gap-2 pt-2">
-                      <Button variant="outline" size="sm" onClick={() => handleOpenModal(registro)} className="border-orange-600 text-orange-600 hover:bg-orange-50">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenModal(registro)}
+                        className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                      >
                         Editar
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDelete(registro.id)} className="border-red-600 text-red-600 hover:bg-red-50">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(registro.id)}
+                        className="border-red-600 text-red-600 hover:bg-red-50"
+                      >
                         Eliminar
                       </Button>
                     </div>
@@ -397,6 +442,11 @@ function PosturaContent() {
                         e.preventDefault();
                         setCurrentPage((prev) => Math.max(prev - 1, 1));
                       }}
+                      className={
+                        currentPage === 1
+                          ? "pointer-events-none text-gray-400"
+                          : ""
+                      }
                     />
                   </PaginationItem>
                   {Array.from({ length: totalPages }).map((_, i) => (
@@ -422,6 +472,11 @@ function PosturaContent() {
                           Math.min(prev + 1, totalPages)
                         );
                       }}
+                      className={
+                        currentPage === totalPages
+                          ? "pointer-events-none text-gray-400"
+                          : ""
+                      }
                     />
                   </PaginationItem>
                 </PaginationContent>
@@ -444,7 +499,13 @@ function PosturaContent() {
 
 export default function PosturaPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Cargando...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          Cargando...
+        </div>
+      }
+    >
       <PosturaContent />
     </Suspense>
   );
