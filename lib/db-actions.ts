@@ -598,6 +598,17 @@ export async function getDashboardStats() {
 }
 
 // Gastos
+export async function getGastosUnicos() {
+  const gastos = await sql`
+    SELECT DISTINCT ON (descripcion) 
+      id, fecha, categoria, descripcion, cantidad, monto, notas, incluir_en_balance
+    FROM gastos
+    ORDER BY descripcion, fecha DESC
+    LIMIT 10
+  `
+  return gastos
+}
+
 export async function getGastos(
   fecha?: string,
   categoria?: string,

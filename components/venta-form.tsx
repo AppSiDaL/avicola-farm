@@ -43,11 +43,13 @@ export function VentaFormModal({
     fecha: string;
     cliente_nombre: string;
     cantidad_kg: number | string;
+    precio_kg: number;
     estado: string;
   }>({
     fecha: getLocalDateString(),
     cliente_nombre: "",
     cantidad_kg: 0,
+    precio_kg: 50,
     estado: "Pagado",
   });
   const [clientes, setClientes] = useState<{ label: string; value: string }[]>(
@@ -73,12 +75,20 @@ export function VentaFormModal({
       fetchClientes();
       setError("");
       if (venta) {
+        // Calcular precio_kg basado en total y cantidad_kg
+        const precioCalculado = venta.cantidad_kg > 0 ? venta.total / venta.cantidad_kg : 50;
+        // Redondear al precio más cercano (50, 45 o 40)
+        const preciosDisponibles = [50, 45, 40];
+        const precioMasCercano = preciosDisponibles.reduce((prev, curr) => 
+          Math.abs(curr - precioCalculado) < Math.abs(prev - precioCalculado) ? curr : prev
+        );
         setFormData({
           fecha: venta.fecha
             ? formatDateForInput(venta.fecha)
             : getLocalDateString(),
           cliente_nombre: venta.cliente_nombre,
           cantidad_kg: venta.cantidad_kg,
+          precio_kg: precioMasCercano,
           estado: venta.estado || "Pendiente",
         });
       } else {
@@ -86,6 +96,7 @@ export function VentaFormModal({
           fecha: getLocalDateString(),
           cliente_nombre: "",
           cantidad_kg: 0,
+          precio_kg: 50,
           estado: "Pagado",
         });
       }
@@ -115,7 +126,7 @@ export function VentaFormModal({
         return;
       }
 
-      const total = cantidadKg * 50;
+      const total = cantidadKg * formData.precio_kg;
       const dataToSubmit = {
         fecha: formData.fecha,
         cliente_nombre: formData.cliente_nombre.trim(),
@@ -141,7 +152,7 @@ export function VentaFormModal({
   const total =
     (typeof formData.cantidad_kg === "string"
       ? parseFloat(formData.cantidad_kg) || 0
-      : formData.cantidad_kg) * 50;
+      : formData.cantidad_kg) * formData.precio_kg;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -219,6 +230,26 @@ export function VentaFormModal({
                 }}
                 required
               />
+            </div>
+            <div>
+              <Label className="mb-2" htmlFor="precio_kg">
+                Precio por kg *
+              </Label>
+              <Select
+                value={String(formData.precio_kg)}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, precio_kg: parseInt(value) })
+                }
+              >
+                <SelectTrigger id="precio_kg">
+                  <SelectValue placeholder="Seleccione un precio" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50">$50 por kg</SelectItem>
+                  <SelectItem value="45">$45 por kg</SelectItem>
+                  <SelectItem value="40">$40 por kg</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="mb-2" htmlFor="estado">

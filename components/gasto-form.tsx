@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createGasto, updateGasto } from "@/lib/db-actions";
+import { createGasto, updateGasto, getGastosUnicos } from "@/lib/db-actions";
 import { getLocalDateString, formatDateForInput } from "@/lib/date-utils";
 
 type Gasto = {
@@ -55,9 +55,22 @@ export function GastoFormModal({
   gasto,
 }: GastoFormModalProps) {
   const [formData, setFormData] = useState(initialFormData);
+  const [gastosAnteriores, setGastosAnteriores] = useState<Gasto[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadGastosAnteriores() {
+      try {
+        const gastos = await getGastosUnicos();
+        setGastosAnteriores(gastos as Gasto[]);
+      } catch (error) {
+        console.error("Error loading gastos anteriores:", error);
+      }
+    }
+    loadGastosAnteriores();
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -157,6 +170,22 @@ export function GastoFormModal({
     }));
   };
 
+  const handleSelectGastoAnterior = (gastoId: string) => {
+    if (gastoId === "none") return;
+    const gastoSeleccionado = gastosAnteriores.find((g) => g.id === gastoId);
+    if (gastoSeleccionado) {
+      setFormData((prev) => ({
+        ...prev,
+        categoria: gastoSeleccionado.categoria,
+        descripcion: gastoSeleccionado.descripcion,
+        cantidad: String(gastoSeleccionado.cantidad),
+        monto: String(gastoSeleccionado.monto),
+        notas: gastoSeleccionado.notas || "",
+        incluir_en_balance: gastoSeleccionado.incluir_en_balance ?? true,
+      }));
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -168,6 +197,28 @@ export function GastoFormModal({
           {error && (
             <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
               {error}
+            </div>
+          )}
+
+          {!gasto && gastosAnteriores.length > 0 && (
+            <div>
+              <Label htmlFor="gastoAnterior">Usar gasto anterior</Label>
+              <Select onValueChange={handleSelectGastoAnterior}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar gasto anterior..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">-- Ninguno --</SelectItem>
+                  {gastosAnteriores.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.descripcion} - ${g.monto.toLocaleString("es-ES", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
